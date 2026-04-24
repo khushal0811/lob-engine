@@ -1,0 +1,2 @@
+# lob-engine
+High-performance C++ limit order book and matching engine with price-time priority matching, advanced order types (stop, iceberg), deterministic replay, snapshotting, and a benchmarked low-latency execution core. Production-style CI/CD, sanitizer coverage, and profiling infrastructure.
