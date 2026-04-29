@@ -1,2 +1,0 @@
-/usr/bin/ar qc liblob_core.a CMakeFiles/lob_core.dir/core/core.cpp.o CMakeFiles/lob_core.dir/book/price_level.cpp.o CMakeFiles/lob_core.dir/book/order_book.cpp.o CMakeFiles/lob_core.dir/engine/matching_engine.cpp.o CMakeFiles/lob_core.dir/feed/csv_replay.cpp.o CMakeFiles/lob_core.dir/feed/synthetic_gen.cpp.o CMakeFiles/lob_core.dir/logging/logger.cpp.o CMakeFiles/lob_core.dir/snapshot/snapshot.cpp.o
-/usr/bin/ranlib liblob_core.a

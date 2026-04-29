@@ -1,7 +1,41 @@
+# Build directories
 build/
+build_*/
 .cache/
+
+# Compiled artifacts
 *.o
 *.a
 *.so
+*.d
+*.dylib
+
+# CMake generated
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+Makefile
 compile_commands.json
+cmake_test_discovery_*.json
+Testing/
+
+# Profiler output
+profile_*.txt
+*.sample
+
+# Agent working context (local only)
+Context/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
 profile_large.txt

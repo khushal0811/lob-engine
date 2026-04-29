@@ -26,16 +26,14 @@ public:
         total_volume_ = (total_volume_ >= qty) ? total_volume_ - qty : 0;
     }
 
-    // Lazy deletion: O(1) — marks as cancelled, no deque mutation
+    // O(1) cancel via lazy deletion — deque entry is drained on next front access.
     void remove(OrderId id, Quantity visible_qty);
 
-    // Skips cancelled entries at the front before returning
     [[nodiscard]] OrderId front() const noexcept {
         drain_cancelled();
         return queue_.front();
     }
 
-    // Accounts for ghost (cancelled) entries in the deque
     [[nodiscard]] bool empty() const noexcept {
         drain_cancelled();
         return queue_.empty();
@@ -61,12 +59,12 @@ private:
     Price    price_{0};
     Quantity total_volume_{0};
 
-    // mutable: drain_cancelled() is called from const methods (front, empty)
-    // to maintain logical const-ness while lazily cleaning the deque.
-    mutable std::deque<OrderId>           queue_;
-    mutable std::unordered_set<OrderId>   cancelled_;
+    // mutable: drain_cancelled() is invoked from logically-const accessors
+    // (front, empty) to maintain FIFO ordering without exposing mutability.
+    mutable std::deque<OrderId>         queue_;
+    mutable std::unordered_set<OrderId> cancelled_;
 
-    // Pops cancelled entries from the front of the deque
+    // Drains all leading cancelled entries from the deque front.
     void drain_cancelled() const noexcept {
         while (!queue_.empty() && cancelled_.count(queue_.front())) {
             cancelled_.erase(queue_.front());

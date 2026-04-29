@@ -5,7 +5,7 @@
 namespace lob {
 
 SyntheticGenerator::SyntheticGenerator(EngineConfig config, uint64_t seed,
-                                         uint64_t max_events)
+                                       uint64_t max_events)
     : config_(std::move(config)),
       mid_price_(config_.mid_price),
       max_events_(max_events),
@@ -15,10 +15,10 @@ SyntheticGenerator::SyntheticGenerator(EngineConfig config, uint64_t seed,
 bool SyntheticGenerator::next(OrderEvent& out) {
     if (event_count_ >= max_events_) return false;
     ++event_count_;
-    current_ts_ += 1'000'000; // 1ms between events (1000 events/sec)
+    current_ts_ += 1'000'000; // 1 ms per event
 
-    bool do_cancel = !live_orders_.empty() &&
-                     uniform_(rng_) < config_.cancel_probability;
+    bool do_cancel =
+        !live_orders_.empty() && uniform_(rng_) < config_.cancel_probability;
 
     if (do_cancel) {
         out = generate_cancel();
@@ -31,7 +31,7 @@ bool SyntheticGenerator::next(OrderEvent& out) {
 Price SyntheticGenerator::sample_price() {
     double offset = price_dist_(rng_);
     Price p = mid_price_ + static_cast<Price>(std::round(offset));
-    return std::max(p, Price{1}); // ensure positive
+    return std::max(p, Price{1});
 }
 
 OrderEvent SyntheticGenerator::generate_new_order() {
@@ -45,7 +45,6 @@ OrderEvent SyntheticGenerator::generate_new_order() {
     o.status = OrderStatus::New;
 
     if (config_.market_maker_mode) {
-        // Place within 3 ticks of mid
         std::uniform_int_distribution<int64_t> spread_dist(1, 3);
         if (o.is_buy()) {
             o.price = mid_price_ - spread_dist(rng_);
@@ -56,9 +55,7 @@ OrderEvent SyntheticGenerator::generate_new_order() {
         o.price = sample_price();
     }
 
-    // Track for future cancel
     live_orders_.push_back(o.id);
-
     return NewOrderEvent{o};
 }
 
@@ -67,7 +64,7 @@ OrderEvent SyntheticGenerator::generate_cancel() {
     size_t idx = idx_dist(rng_);
     OrderId cancel_id = live_orders_[idx];
 
-    // Remove from live list (swap-and-pop)
+    // Swap-and-pop to avoid O(n) erase.
     live_orders_[idx] = live_orders_.back();
     live_orders_.pop_back();
 

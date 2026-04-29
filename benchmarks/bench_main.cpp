@@ -18,10 +18,8 @@ int main(int argc, char** argv) {
         } else if (std::strcmp(argv[i], "--duration") == 0 && i + 1 < argc) {
             duration_sec = static_cast<uint32_t>(std::stoul(argv[++i]));
         } else if (std::strcmp(argv[i], "--all") == 0) {
-            // Run all scenarios
             for (std::size_t s = 0; s < lob::kScenarioCount; ++s) {
-                lob::BenchmarkRunner runner(lob::kScenarioNames[s], seed,
-                                             duration_sec);
+                lob::BenchmarkRunner runner(lob::kScenarioNames[s], seed, duration_sec);
                 runner.run();
                 runner.report();
             }

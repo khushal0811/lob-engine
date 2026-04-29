@@ -36,9 +36,7 @@ MatchResult MatchingEngine::process_new_order(const NewOrderEvent& e) {
         }
     } else if (order.type == OrderType::Market) {
         match_market(order, result);
-        // Market orders never rest
     } else if (order.type == OrderType::Stop || order.type == OrderType::StopLimit) {
-        // Check if immediately triggered by last trade price
         bool immediately_triggered = false;
         if (order.is_buy() && book_.last_trade_price != 0 &&
             book_.last_trade_price >= order.stop_price)
@@ -53,7 +51,6 @@ MatchResult MatchingEngine::process_new_order(const NewOrderEvent& e) {
             pending_stops_.push_back(order);
         }
     } else if (order.type == OrderType::Iceberg) {
-        // Reserve = total quantity minus initial peak
         order.reserve_qty = order.quantity - order.peak_qty;
         order.quantity = order.peak_qty;
         match_limit(order, result);
@@ -68,21 +65,17 @@ MatchResult MatchingEngine::process_new_order(const NewOrderEvent& e) {
 }
 
 // ---------------------------------------------------------------------------
-// Limit matching
+// Limit order matching — price-time priority against the opposite side.
 // ---------------------------------------------------------------------------
 void MatchingEngine::match_limit(Order& aggressor, MatchResult& result) {
     while (aggressor.quantity > 0) {
         PriceLevel* passive_level =
             aggressor.is_buy() ? book_.best_ask_level() : book_.best_bid_level();
 
-        if (!passive_level)
-            break;
+        if (!passive_level) break;
 
-        // Price cross check
-        if (aggressor.is_buy() && passive_level->price() > aggressor.price)
-            break;
-        if (aggressor.is_sell() && passive_level->price() < aggressor.price)
-            break;
+        if (aggressor.is_buy() && passive_level->price() > aggressor.price) break;
+        if (aggressor.is_sell() && passive_level->price() < aggressor.price) break;
 
         OrderId passive_id = passive_level->front();
         Order* passive = book_.find_order_mut(passive_id);
@@ -92,12 +85,11 @@ void MatchingEngine::match_limit(Order& aggressor, MatchResult& result) {
         execute_fill(aggressor, *passive, fill_qty, result);
     }
 
-    if (aggressor.quantity == 0)
-        aggressor.status = OrderStatus::Filled;
+    if (aggressor.quantity == 0) aggressor.status = OrderStatus::Filled;
 }
 
 // ---------------------------------------------------------------------------
-// Market matching
+// Market order matching — consumes liquidity at any available price.
 // ---------------------------------------------------------------------------
 void MatchingEngine::match_market(Order& aggressor, MatchResult& result) {
     while (aggressor.quantity > 0) {
@@ -120,12 +112,11 @@ void MatchingEngine::match_market(Order& aggressor, MatchResult& result) {
         execute_fill(aggressor, *passive, fill_qty, result);
     }
 
-    if (aggressor.quantity == 0)
-        aggressor.status = OrderStatus::Filled;
+    if (aggressor.quantity == 0) aggressor.status = OrderStatus::Filled;
 }
 
 // ---------------------------------------------------------------------------
-// Fill execution (shared by limit + market)
+// Fill execution — shared path for limit and market matching.
 // ---------------------------------------------------------------------------
 void MatchingEngine::execute_fill(Order& aggressor, Order& passive, Quantity fill_qty,
                                   MatchResult& result) {
@@ -147,49 +138,45 @@ void MatchingEngine::execute_fill(Order& aggressor, Order& passive, Quantity fil
     OrderId passive_id = passive.id;
 
     if (passive.quantity == 0 && passive.is_iceberg() && passive.reserve_qty > 0) {
-        // Iceberg peak exhausted — replenish with correct peak volume
         replenish_iceberg(passive, fill_qty, result);
     } else if (passive.quantity == 0) {
         passive.status = OrderStatus::Filled;
         book_.cancel_order(passive_id);
     } else {
-        // Partial fill on passive — update volume tracking
         PriceLevel* lvl = book_.get_level(passive.side, passive.price);
-        if (lvl)
-            lvl->reduce_front_volume(fill_qty);
+        if (lvl) lvl->reduce_front_volume(fill_qty);
         book_.update_order_quantity(passive_id, passive.quantity);
     }
 
-    // Evaluate stop triggers after every trade (non-reentrant: called at top level only)
-    // Guard against re-entrant calls from within triggered stop processing
-    // by checking if we are already inside evaluate_stop_triggers
     evaluate_stop_triggers(result);
 }
 
 // ---------------------------------------------------------------------------
-// Iceberg replenishment
+// Iceberg replenishment — restores the visible peak from the hidden reserve.
+// The order moves to the back of the price level, resetting time priority.
 // ---------------------------------------------------------------------------
-void MatchingEngine::replenish_iceberg(Order& passive, Quantity filled_qty, MatchResult& result) {
-    (void)result; // may be used for future execution reports
+void MatchingEngine::replenish_iceberg(Order& passive, Quantity filled_qty,
+                                       MatchResult& result) {
+    (void)result;
     PriceLevel* level = book_.get_level(passive.side, passive.price);
-    if (!level)
-        return;
+    if (!level) return;
 
-    // Pop front with the correct filled quantity so total_volume_ is decremented
     level->pop_front(filled_qty);
 
-    // Replenish: new peak = min(original peak_qty, remaining reserve)
     Quantity new_peak = std::min(passive.peak_qty, passive.reserve_qty);
     passive.reserve_qty -= new_peak;
     passive.quantity = new_peak;
 
-    // Push to back — time priority resets
     level->push_back(passive.id, new_peak);
     book_.update_order_quantity(passive.id, new_peak);
 }
 
 // ---------------------------------------------------------------------------
-// Stop order trigger evaluation
+// Stop order trigger evaluation.
+//
+// pending_stops_ is swapped into a local vector before iteration so that
+// any fills generated by a triggered stop cannot re-enter this function
+// and re-evaluate the same pending list.
 // ---------------------------------------------------------------------------
 void MatchingEngine::evaluate_stop_triggers(MatchResult& result) {
     if (pending_stops_.empty()) return;
@@ -197,22 +184,17 @@ void MatchingEngine::evaluate_stop_triggers(MatchResult& result) {
     Price last_price = book_.last_trade_price;
     if (last_price == 0) return;
 
-    // Swap out pending_stops_ before iterating so that any re-entrant call
-    // from a triggered stop's sub-fill sees an empty list and cannot
-    // re-trigger the same stop.
     std::vector<Order> working;
     std::swap(working, pending_stops_);
 
     for (auto& stop : working) {
         bool triggered = false;
-        if (stop.is_buy()  && last_price >= stop.stop_price) triggered = true;
+        if (stop.is_buy() && last_price >= stop.stop_price) triggered = true;
         if (stop.is_sell() && last_price <= stop.stop_price) triggered = true;
 
         if (triggered) {
             process_triggered_stop(stop, result);
         } else {
-            // Keep in pending — re-entrant calls may have already added new
-            // items to pending_stops_, so we append rather than overwrite.
             pending_stops_.push_back(stop);
         }
     }
@@ -226,9 +208,7 @@ void MatchingEngine::process_triggered_stop(Order& stop, MatchResult& result) {
         converted.type = OrderType::Market;
         converted.price = 0;
     } else {
-        // StopLimit: convert to limit at the stored limit price
         converted.type = OrderType::Limit;
-        // converted.price already holds the limit price
     }
 
     auto sub_result = process_new_order(NewOrderEvent{converted});
@@ -245,7 +225,6 @@ void MatchingEngine::process_triggered_stop(Order& stop, MatchResult& result) {
 MatchResult MatchingEngine::process_cancel(const CancelOrderEvent& e) {
     MatchResult result;
 
-    // Also check pending stops
     for (auto it = pending_stops_.begin(); it != pending_stops_.end(); ++it) {
         if (it->id == e.order_id) {
             ExecutionReport rep;
@@ -307,15 +286,15 @@ MatchResult MatchingEngine::process_modify(const ModifyOrderEvent& e) {
     bool qty_increased = (e.new_quantity != 0 && e.new_quantity > order.quantity);
 
     if (price_changed || qty_increased) {
+        // Price change or quantity increase: cancel and reinsert to reset time priority.
         book_.cancel_order(e.order_id);
-        if (e.new_price != 0)
-            order.price = e.new_price;
-        if (e.new_quantity != 0)
-            order.quantity = e.new_quantity;
+        if (e.new_price != 0) order.price = e.new_price;
+        if (e.new_quantity != 0) order.quantity = e.new_quantity;
         order.timestamp = e.timestamp;
         book_.insert_order(order);
     } else {
         if (e.new_quantity != 0 && e.new_quantity < order.quantity) {
+            // Quantity reduction preserves time priority.
             Quantity delta = order.quantity - e.new_quantity;
             book_.update_order_quantity(e.order_id, e.new_quantity);
             book_.reduce_level_volume(order.side, order.price, delta);

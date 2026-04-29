@@ -1,5 +1,0 @@
-if(EXISTS "/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_asan/tests/lob_tests[1]_tests.cmake")
-  include("/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_asan/tests/lob_tests[1]_tests.cmake")
-else()
-  add_test(lob_tests_NOT_BUILT lob_tests_NOT_BUILT)
-endif()

@@ -1,1 +1,0 @@
-/usr/bin/c++ -O2 -march=native -O3 -DNDEBUG -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/lob_replay.dir/replay.cpp.o -o lob_replay  ../src/liblob_core.a

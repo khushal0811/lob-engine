@@ -5,7 +5,7 @@
 
 namespace lob {
 
-// Returns an EngineConfig pre-configured for each named benchmark scenario.
+// Returns an EngineConfig pre-configured for the named benchmark scenario.
 inline EngineConfig get_scenario_config(const std::string& name) {
     EngineConfig cfg;
 
@@ -34,7 +34,6 @@ inline EngineConfig get_scenario_config(const std::string& name) {
         cfg.cancel_probability = 0.2;
         cfg.price_std_dev = 20;
     } else {
-        // Default to medium
         cfg.arrival_rate = 1000;
         cfg.cancel_probability = 0.3;
         cfg.price_std_dev = 20;
@@ -43,10 +42,8 @@ inline EngineConfig get_scenario_config(const std::string& name) {
     return cfg;
 }
 
-// List of all scenario names for iteration
 inline const char* const kScenarioNames[] = {
-    "small", "medium", "large", "high_cancel", "market_heavy", "iceberg_stop"
-};
+    "small", "medium", "large", "high_cancel", "market_heavy", "iceberg_stop"};
 inline constexpr std::size_t kScenarioCount = 6;
 
 } // namespace lob

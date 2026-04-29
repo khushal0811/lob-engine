@@ -9,7 +9,7 @@ namespace lob {
 class SyntheticGenerator {
 public:
     explicit SyntheticGenerator(EngineConfig config, uint64_t seed = 42,
-                                 uint64_t max_events = 100000);
+                                uint64_t max_events = 100000);
 
     bool next(OrderEvent& out);
 
@@ -23,10 +23,8 @@ private:
     uint64_t max_events_;
     Timestamp current_ts_{1'700'000'000'000'000'000ULL};
 
-    // Track live order IDs for cancellation
     std::vector<OrderId> live_orders_;
 
-    // RNG
     std::mt19937_64 rng_;
     std::normal_distribution<double> price_dist_;
     std::uniform_real_distribution<double> uniform_{0.0, 1.0};
