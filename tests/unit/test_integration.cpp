@@ -90,7 +90,7 @@ static void check_stop_exclusivity(const OrderBook& book,
                                    const std::vector<Order>& pending_stops) {
     for (const auto& stop : pending_stops) {
         ASSERT_FALSE(book.has_order(stop.id))
-            << "Stop order " << stop.id << " found in order book — should only be in pending_stops";
+            << "Stop order " << stop.id << " in order book instead of pending_stops";
     }
 }
 
