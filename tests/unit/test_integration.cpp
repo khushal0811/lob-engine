@@ -87,7 +87,7 @@ static void check_id_map_consistency(const OrderBook& book) {
 }
 
 static void check_stop_exclusivity(const OrderBook& book,
-                                    const std::vector<Order>& pending_stops) {
+                                   const std::vector<Order>& pending_stops) {
     for (const auto& stop : pending_stops) {
         ASSERT_FALSE(book.has_order(stop.id))
             << "Stop order " << stop.id << " found in order book — should only be in pending_stops";
@@ -95,7 +95,7 @@ static void check_stop_exclusivity(const OrderBook& book,
 }
 
 static void check_all_invariants(const OrderBook& book,
-                                  const std::vector<Order>& pending_stops) {
+                                 const std::vector<Order>& pending_stops) {
     check_orders_exist_in_levels(book);
     check_bid_ordering(book);
     check_ask_ordering(book);
