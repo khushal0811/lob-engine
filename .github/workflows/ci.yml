@@ -53,11 +53,11 @@ jobs:
         run: cd build_san && ctest --output-on-failure
 
   format:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+        run: brew install clang-format
       - name: Check formatting
         run: |
           find src tests benchmarks tools -name '*.cpp' -o -name '*.hpp' \
