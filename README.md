@@ -179,13 +179,21 @@ cd build && ctest --output-on-failure
 
 All 77+ tests should pass in under 1 second.
 
-### Replay tests
+### Running sample scenarios
+
+The engine comes with sample CSV datasets demonstrating different order types (limit, market, stop, iceberg). You can replay them and see the trades generated:
 
 ```bash
+# Run the small market scenario
+./build/tools/lob_replay --events data/sample-replay/small_market.csv
+
+# Run and validate against expected output
 ./build/tools/lob_replay \
-  --events tests/replay/data/basic_limit.csv \
-  --expected tests/replay/data/basic_limit_expected.csv
+  --events data/sample-replay/iceberg_scenario.csv \
+  --expected data/sample-replay/iceberg_scenario_expected.csv
 ```
+
+See [data/sample-replay/README.md](data/sample-replay/README.md) for full details on the CSV format and available scenarios.
 
 ### Sanitizer build
 
