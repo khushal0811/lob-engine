@@ -33,8 +33,7 @@ public:
                   << "Latency max:  " << latency_.max_val() << " ns\n"
                   << "Spread:     " << last_spread_ << "\n"
                   << "Imbalance:  " << last_imbalance_ << "\n"
-                  << "Depth:      " << last_bid_depth_ << " bid / "
-                  << last_ask_depth_ << " ask\n";
+                  << "Depth:      " << last_bid_depth_ << " bid / " << last_ask_depth_ << " ask\n";
     }
 
     [[nodiscard]] const LatencyHistogram& latency() const { return latency_; }

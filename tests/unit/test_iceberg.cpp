@@ -5,18 +5,23 @@ using namespace lob;
 
 static Order make_limit(OrderId id, Side side, Price price, Quantity qty) {
     Order o;
-    o.id = id; o.side = side; o.type = OrderType::Limit;
-    o.price = price; o.quantity = qty; o.orig_qty = qty;
+    o.id = id;
+    o.side = side;
+    o.type = OrderType::Limit;
+    o.price = price;
+    o.quantity = qty;
+    o.orig_qty = qty;
     o.status = OrderStatus::New;
     return o;
 }
 
-static Order make_iceberg(OrderId id, Side side, Price price,
-                           Quantity total_qty, Quantity peak) {
+static Order make_iceberg(OrderId id, Side side, Price price, Quantity total_qty, Quantity peak) {
     Order o;
-    o.id = id; o.side = side; o.type = OrderType::Iceberg;
+    o.id = id;
+    o.side = side;
+    o.type = OrderType::Iceberg;
     o.price = price;
-    o.quantity = total_qty;  // engine will split into peak + reserve
+    o.quantity = total_qty; // engine will split into peak + reserve
     o.orig_qty = total_qty;
     o.peak_qty = peak;
     o.status = OrderStatus::New;
@@ -59,7 +64,7 @@ TEST(IcebergOrders, PeakExhaustedThenReplenished) {
     EXPECT_EQ(engine.book().order_count(), 1u);
     const auto& asks = engine.book().asks();
     auto it = asks.find(100);
-    EXPECT_EQ(it->second.total_volume(), 20u);  // new peak visible
+    EXPECT_EQ(it->second.total_volume(), 20u); // new peak visible
 }
 
 // ---------------------------------------------------------------------------
@@ -78,7 +83,7 @@ TEST(IcebergOrders, ReplenishmentResetsTimePriority) {
     // Now buy 20 more — should hit order 2 (now at front), not iceberg (at back)
     auto result = engine.submit(NewOrderEvent{make_limit(4, Side::Buy, 100, 20)});
     ASSERT_EQ(result.trades.size(), 1u);
-    EXPECT_EQ(result.trades[0].passive_id, 2u);  // order 2 fills, not iceberg
+    EXPECT_EQ(result.trades[0].passive_id, 2u); // order 2 fills, not iceberg
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +100,8 @@ TEST(IcebergOrders, FullExhaustionRemovesOrder) {
     EXPECT_GE(result.trades.size(), 1u);
     // Total filled qty across trades should be 40
     Quantity total = 0;
-    for (const auto& t : result.trades) total += t.quantity;
+    for (const auto& t : result.trades)
+        total += t.quantity;
     EXPECT_EQ(total, 40u);
 
     // Book should be empty
@@ -114,7 +120,8 @@ TEST(IcebergOrders, AggressorFillsMultipleReplenishments) {
     auto result = engine.submit(NewOrderEvent{make_limit(2, Side::Buy, 100, 60)});
 
     Quantity total = 0;
-    for (const auto& t : result.trades) total += t.quantity;
+    for (const auto& t : result.trades)
+        total += t.quantity;
     EXPECT_EQ(total, 60u);
     EXPECT_FALSE(engine.book().best_ask().has_value());
 }

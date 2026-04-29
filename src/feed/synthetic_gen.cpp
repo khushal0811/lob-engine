@@ -4,21 +4,17 @@
 
 namespace lob {
 
-SyntheticGenerator::SyntheticGenerator(EngineConfig config, uint64_t seed,
-                                       uint64_t max_events)
-    : config_(std::move(config)),
-      mid_price_(config_.mid_price),
-      max_events_(max_events),
-      rng_(seed),
-      price_dist_(0.0, config_.price_std_dev) {}
+SyntheticGenerator::SyntheticGenerator(EngineConfig config, uint64_t seed, uint64_t max_events)
+    : config_(std::move(config)), mid_price_(config_.mid_price), max_events_(max_events),
+      rng_(seed), price_dist_(0.0, config_.price_std_dev) {}
 
 bool SyntheticGenerator::next(OrderEvent& out) {
-    if (event_count_ >= max_events_) return false;
+    if (event_count_ >= max_events_)
+        return false;
     ++event_count_;
     current_ts_ += 1'000'000; // 1 ms per event
 
-    bool do_cancel =
-        !live_orders_.empty() && uniform_(rng_) < config_.cancel_probability;
+    bool do_cancel = !live_orders_.empty() && uniform_(rng_) < config_.cancel_probability;
 
     if (do_cancel) {
         out = generate_cancel();

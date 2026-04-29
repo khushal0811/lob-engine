@@ -9,15 +9,12 @@
 using namespace lob;
 
 static void print_usage(const char* prog) {
-    std::cerr << "Usage: " << prog
-              << " --events <csv> [--snapshot <bin>] [--expected <csv>]\n";
+    std::cerr << "Usage: " << prog << " --events <csv> [--snapshot <bin>] [--expected <csv>]\n";
 }
 
 static std::string trade_to_csv(const Trade& t) {
-    return std::to_string(t.aggressor_id) + "," +
-           std::to_string(t.passive_id) + "," +
-           std::to_string(t.price) + "," +
-           std::to_string(t.quantity);
+    return std::to_string(t.aggressor_id) + "," + std::to_string(t.passive_id) + "," +
+           std::to_string(t.price) + "," + std::to_string(t.quantity);
 }
 
 int main(int argc, char** argv) {
@@ -27,9 +24,12 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--events" && i + 1 < argc) events_path = argv[++i];
-        else if (arg == "--snapshot" && i + 1 < argc) snapshot_path = argv[++i];
-        else if (arg == "--expected" && i + 1 < argc) expected_path = argv[++i];
+        if (arg == "--events" && i + 1 < argc)
+            events_path = argv[++i];
+        else if (arg == "--snapshot" && i + 1 < argc)
+            snapshot_path = argv[++i];
+        else if (arg == "--expected" && i + 1 < argc)
+            expected_path = argv[++i];
         else {
             print_usage(argv[0]);
             return 1;
@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::cerr << "Replayed " << event_count << " events, produced "
-              << trade_lines.size() << " trades\n";
+    std::cerr << "Replayed " << event_count << " events, produced " << trade_lines.size()
+              << " trades\n";
 
     // Output trades
     for (const auto& line : trade_lines) {
@@ -93,10 +93,11 @@ int main(int argc, char** argv) {
         std::string line;
         size_t idx = 0;
         while (std::getline(exp_file, line)) {
-            if (line.empty()) continue;
+            if (line.empty())
+                continue;
             if (idx >= trade_lines.size()) {
-                std::cerr << "MISMATCH at trade " << idx
-                          << ": expected more trades, got " << trade_lines.size() << "\n";
+                std::cerr << "MISMATCH at trade " << idx << ": expected more trades, got "
+                          << trade_lines.size() << "\n";
                 return 1;
             }
             if (trade_lines[idx] != line) {
@@ -109,8 +110,8 @@ int main(int argc, char** argv) {
         }
 
         if (idx != trade_lines.size()) {
-            std::cerr << "MISMATCH: expected " << idx << " trades, got "
-                      << trade_lines.size() << "\n";
+            std::cerr << "MISMATCH: expected " << idx << " trades, got " << trade_lines.size()
+                      << "\n";
             return 1;
         }
 

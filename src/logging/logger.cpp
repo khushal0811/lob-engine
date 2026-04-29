@@ -3,27 +3,27 @@
 
 namespace lob {
 
-Logger::Logger(std::string path, uint32_t queue_size)
-    : path_(std::move(path)) {
+Logger::Logger(std::string path, uint32_t queue_size) : path_(std::move(path)) {
     // Round up to next power of 2
     uint32_t n = 1;
-    while (n < queue_size) n <<= 1;
+    while (n < queue_size)
+        n <<= 1;
     buffer_.resize(n);
     mask_ = n - 1;
 }
 
-Logger::~Logger() {
-    stop();
-}
+Logger::~Logger() { stop(); }
 
 void Logger::start() {
-    if (running_.load()) return;
+    if (running_.load())
+        return;
     running_.store(true);
     writer_thread_ = std::thread(&Logger::writer_loop, this);
 }
 
 void Logger::stop() {
-    if (!running_.load()) return;
+    if (!running_.load())
+        return;
     running_.store(false);
     if (writer_thread_.joinable()) {
         writer_thread_.join();
@@ -41,10 +41,10 @@ void Logger::log(Level level, std::string_view category, std::string_view messag
 
     auto& record = buffer_[tail];
     record.level = level;
-    record.timestamp = static_cast<uint64_t>(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::steady_clock::now().time_since_epoch())
-            .count());
+    record.timestamp =
+        static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                  std::chrono::steady_clock::now().time_since_epoch())
+                                  .count());
 
     std::memset(record.category, 0, sizeof(record.category));
     std::memcpy(record.category, category.data(),
@@ -61,8 +61,7 @@ void Logger::writer_loop() {
     std::ofstream out(path_, std::ios::app);
 
     while (running_.load(std::memory_order_relaxed) ||
-           head_.load(std::memory_order_acquire) !=
-               tail_.load(std::memory_order_acquire)) {
+           head_.load(std::memory_order_acquire) != tail_.load(std::memory_order_acquire)) {
         uint32_t head = head_.load(std::memory_order_relaxed);
         if (head == tail_.load(std::memory_order_acquire)) {
             std::this_thread::sleep_for(std::chrono::microseconds(100));
@@ -70,11 +69,8 @@ void Logger::writer_loop() {
         }
 
         const auto& record = buffer_[head];
-        out << "{\"ts\":" << record.timestamp
-            << ",\"level\":\"" << level_str(record.level)
-            << "\",\"cat\":\"" << record.category
-            << "\",\"msg\":\"" << record.message
-            << "\"}\n";
+        out << "{\"ts\":" << record.timestamp << ",\"level\":\"" << level_str(record.level)
+            << "\",\"cat\":\"" << record.category << "\",\"msg\":\"" << record.message << "\"}\n";
 
         head_.store((head + 1) & mask_, std::memory_order_release);
     }

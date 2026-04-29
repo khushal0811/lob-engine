@@ -1,14 +1,14 @@
 #include "core/spsc_queue.hpp"
+#include "engine/matching_engine.hpp"
 #include "feed/csv_replay.hpp"
 #include "feed/synthetic_gen.hpp"
 #include "logging/logger.hpp"
 #include "metrics/histogram.hpp"
 #include "metrics/metrics.hpp"
 #include "snapshot/snapshot.hpp"
-#include "engine/matching_engine.hpp"
-#include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <thread>
 
 using namespace lob;
@@ -42,7 +42,8 @@ TEST(SpscQueue, PushFullReturnsFalse) {
 
 TEST(SpscQueue, FifoOrder) {
     SpscQueue<int, 8> q;
-    for (int i = 0; i < 7; ++i) q.push(i);
+    for (int i = 0; i < 7; ++i)
+        q.push(i);
     for (int i = 0; i < 7; ++i) {
         int val = -1;
         EXPECT_TRUE(q.pop(val));
@@ -61,7 +62,8 @@ TEST(CsvReplayReader, ReadsLimitOrders) {
     CsvReplayReader reader(path);
     OrderEvent event;
     int count = 0;
-    while (reader.next(event)) ++count;
+    while (reader.next(event))
+        ++count;
     EXPECT_EQ(count, 20);
     EXPECT_EQ(reader.error_count(), 0u);
 }
@@ -79,7 +81,8 @@ TEST(CsvReplayReader, SkipsMalformedLines) {
     CsvReplayReader reader(path);
     OrderEvent event;
     int count = 0;
-    while (reader.next(event)) ++count;
+    while (reader.next(event))
+        ++count;
     EXPECT_EQ(count, 2);
     EXPECT_EQ(reader.error_count(), 1u);
     std::filesystem::remove(path);
@@ -116,7 +119,8 @@ TEST(SyntheticGenerator, RespectsMaxEvents) {
     SyntheticGenerator gen(cfg, 42, 10);
     OrderEvent event;
     int count = 0;
-    while (gen.next(event)) ++count;
+    while (gen.next(event))
+        ++count;
     EXPECT_EQ(count, 10);
 }
 
@@ -169,7 +173,8 @@ TEST(Logger, JoinsCleanlyOnDestruction) {
 
 TEST(LatencyHistogram, RecordAndPercentile) {
     LatencyHistogram h;
-    for (uint64_t i = 1; i <= 100; ++i) h.record(i);
+    for (uint64_t i = 1; i <= 100; ++i)
+        h.record(i);
     EXPECT_EQ(h.count(), 100u);
     EXPECT_EQ(h.max_val(), 100u);
     EXPECT_GE(h.p50(), 49u);
@@ -205,14 +210,22 @@ TEST(Snapshot, RoundTripPreservesState) {
 
     // Seed some orders
     Order buy;
-    buy.id = 1; buy.side = Side::Buy; buy.type = OrderType::Limit;
-    buy.price = 100; buy.quantity = 50; buy.orig_qty = 50;
+    buy.id = 1;
+    buy.side = Side::Buy;
+    buy.type = OrderType::Limit;
+    buy.price = 100;
+    buy.quantity = 50;
+    buy.orig_qty = 50;
     buy.status = OrderStatus::Resting;
     original_book.insert_order(buy);
 
     Order sell;
-    sell.id = 2; sell.side = Side::Sell; sell.type = OrderType::Limit;
-    sell.price = 105; sell.quantity = 30; sell.orig_qty = 30;
+    sell.id = 2;
+    sell.side = Side::Sell;
+    sell.type = OrderType::Limit;
+    sell.price = 105;
+    sell.quantity = 30;
+    sell.orig_qty = 30;
     sell.status = OrderStatus::Resting;
     original_book.insert_order(sell);
 
@@ -220,8 +233,11 @@ TEST(Snapshot, RoundTripPreservesState) {
 
     std::vector<Order> original_stops;
     Order stop;
-    stop.id = 3; stop.side = Side::Buy; stop.type = OrderType::Stop;
-    stop.stop_price = 110; stop.quantity = 20;
+    stop.id = 3;
+    stop.side = Side::Buy;
+    stop.type = OrderType::Stop;
+    stop.stop_price = 110;
+    stop.quantity = 20;
     original_stops.push_back(stop);
 
     // Save
@@ -257,8 +273,7 @@ static std::vector<Trade> run_replay(const std::string& path) {
     OrderEvent event;
     while (reader.next(event)) {
         auto result = engine.submit(event);
-        all_trades.insert(all_trades.end(), result.trades.begin(),
-                          result.trades.end());
+        all_trades.insert(all_trades.end(), result.trades.begin(), result.trades.end());
     }
     return all_trades;
 }

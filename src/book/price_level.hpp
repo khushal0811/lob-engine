@@ -39,29 +39,28 @@ public:
         return queue_.empty();
     }
 
-    [[nodiscard]] Price    price()        const noexcept { return price_; }
+    [[nodiscard]] Price price() const noexcept { return price_; }
     [[nodiscard]] Quantity total_volume() const noexcept { return total_volume_; }
 
-    [[nodiscard]] std::size_t size() const noexcept {
-        return queue_.size() - cancelled_.size();
-    }
+    [[nodiscard]] std::size_t size() const noexcept { return queue_.size() - cancelled_.size(); }
 
     [[nodiscard]] std::vector<OrderId> order_ids() const {
         std::vector<OrderId> ids;
         ids.reserve(queue_.size() - cancelled_.size());
         for (auto id : queue_) {
-            if (cancelled_.count(id) == 0) ids.push_back(id);
+            if (cancelled_.count(id) == 0)
+                ids.push_back(id);
         }
         return ids;
     }
 
 private:
-    Price    price_{0};
+    Price price_{0};
     Quantity total_volume_{0};
 
     // mutable: drain_cancelled() is invoked from logically-const accessors
     // (front, empty) to maintain FIFO ordering without exposing mutability.
-    mutable std::deque<OrderId>         queue_;
+    mutable std::deque<OrderId> queue_;
     mutable std::unordered_set<OrderId> cancelled_;
 
     // Drains all leading cancelled entries from the deque front.

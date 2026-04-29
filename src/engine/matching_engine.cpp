@@ -72,10 +72,13 @@ void MatchingEngine::match_limit(Order& aggressor, MatchResult& result) {
         PriceLevel* passive_level =
             aggressor.is_buy() ? book_.best_ask_level() : book_.best_bid_level();
 
-        if (!passive_level) break;
+        if (!passive_level)
+            break;
 
-        if (aggressor.is_buy() && passive_level->price() > aggressor.price) break;
-        if (aggressor.is_sell() && passive_level->price() < aggressor.price) break;
+        if (aggressor.is_buy() && passive_level->price() > aggressor.price)
+            break;
+        if (aggressor.is_sell() && passive_level->price() < aggressor.price)
+            break;
 
         OrderId passive_id = passive_level->front();
         Order* passive = book_.find_order_mut(passive_id);
@@ -85,7 +88,8 @@ void MatchingEngine::match_limit(Order& aggressor, MatchResult& result) {
         execute_fill(aggressor, *passive, fill_qty, result);
     }
 
-    if (aggressor.quantity == 0) aggressor.status = OrderStatus::Filled;
+    if (aggressor.quantity == 0)
+        aggressor.status = OrderStatus::Filled;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +116,8 @@ void MatchingEngine::match_market(Order& aggressor, MatchResult& result) {
         execute_fill(aggressor, *passive, fill_qty, result);
     }
 
-    if (aggressor.quantity == 0) aggressor.status = OrderStatus::Filled;
+    if (aggressor.quantity == 0)
+        aggressor.status = OrderStatus::Filled;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +149,8 @@ void MatchingEngine::execute_fill(Order& aggressor, Order& passive, Quantity fil
         book_.cancel_order(passive_id);
     } else {
         PriceLevel* lvl = book_.get_level(passive.side, passive.price);
-        if (lvl) lvl->reduce_front_volume(fill_qty);
+        if (lvl)
+            lvl->reduce_front_volume(fill_qty);
         book_.update_order_quantity(passive_id, passive.quantity);
     }
 
@@ -155,11 +161,11 @@ void MatchingEngine::execute_fill(Order& aggressor, Order& passive, Quantity fil
 // Iceberg replenishment — restores the visible peak from the hidden reserve.
 // The order moves to the back of the price level, resetting time priority.
 // ---------------------------------------------------------------------------
-void MatchingEngine::replenish_iceberg(Order& passive, Quantity filled_qty,
-                                       MatchResult& result) {
+void MatchingEngine::replenish_iceberg(Order& passive, Quantity filled_qty, MatchResult& result) {
     (void)result;
     PriceLevel* level = book_.get_level(passive.side, passive.price);
-    if (!level) return;
+    if (!level)
+        return;
 
     level->pop_front(filled_qty);
 
@@ -179,18 +185,22 @@ void MatchingEngine::replenish_iceberg(Order& passive, Quantity filled_qty,
 // and re-evaluate the same pending list.
 // ---------------------------------------------------------------------------
 void MatchingEngine::evaluate_stop_triggers(MatchResult& result) {
-    if (pending_stops_.empty()) return;
+    if (pending_stops_.empty())
+        return;
 
     Price last_price = book_.last_trade_price;
-    if (last_price == 0) return;
+    if (last_price == 0)
+        return;
 
     std::vector<Order> working;
     std::swap(working, pending_stops_);
 
     for (auto& stop : working) {
         bool triggered = false;
-        if (stop.is_buy() && last_price >= stop.stop_price) triggered = true;
-        if (stop.is_sell() && last_price <= stop.stop_price) triggered = true;
+        if (stop.is_buy() && last_price >= stop.stop_price)
+            triggered = true;
+        if (stop.is_sell() && last_price <= stop.stop_price)
+            triggered = true;
 
         if (triggered) {
             process_triggered_stop(stop, result);
@@ -288,8 +298,10 @@ MatchResult MatchingEngine::process_modify(const ModifyOrderEvent& e) {
     if (price_changed || qty_increased) {
         // Price change or quantity increase: cancel and reinsert to reset time priority.
         book_.cancel_order(e.order_id);
-        if (e.new_price != 0) order.price = e.new_price;
-        if (e.new_quantity != 0) order.quantity = e.new_quantity;
+        if (e.new_price != 0)
+            order.price = e.new_price;
+        if (e.new_quantity != 0)
+            order.quantity = e.new_quantity;
         order.timestamp = e.timestamp;
         book_.insert_order(order);
     } else {

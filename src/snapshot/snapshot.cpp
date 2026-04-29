@@ -5,11 +5,11 @@ namespace lob {
 
 SnapshotManager::SnapshotManager(std::string path) : path_(std::move(path)) {}
 
-bool SnapshotManager::save(const OrderBook& book,
-                            const std::vector<Order>& pending_stops,
-                            uint64_t sequence) {
+bool SnapshotManager::save(const OrderBook& book, const std::vector<Order>& pending_stops,
+                           uint64_t sequence) {
     std::ofstream out(path_, std::ios::binary);
-    if (!out) return false;
+    if (!out)
+        return false;
 
     // Magic
     out.write(reinterpret_cast<const char*>(&kMagic), sizeof(kMagic));
@@ -61,14 +61,15 @@ bool SnapshotManager::save(const OrderBook& book,
     return out.good();
 }
 
-bool SnapshotManager::load(OrderBook& book, std::vector<Order>& pending_stops,
-                            uint64_t& sequence) {
+bool SnapshotManager::load(OrderBook& book, std::vector<Order>& pending_stops, uint64_t& sequence) {
     std::ifstream in(path_, std::ios::binary);
-    if (!in) return false;
+    if (!in)
+        return false;
 
     uint32_t magic = 0;
     in.read(reinterpret_cast<char*>(&magic), sizeof(magic));
-    if (magic != kMagic) return false;
+    if (magic != kMagic)
+        return false;
 
     in.read(reinterpret_cast<char*>(&sequence), sizeof(sequence));
 

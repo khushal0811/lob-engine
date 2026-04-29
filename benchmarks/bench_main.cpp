@@ -25,9 +25,10 @@ int main(int argc, char** argv) {
             }
             return 0;
         } else {
-            std::cerr << "Usage: " << argv[0]
-                      << " [--scenario <name>] [--seed <n>] [--duration <sec>] [--all]\n"
-                      << "Scenarios: small, medium, large, high_cancel, market_heavy, iceberg_stop\n";
+            std::cerr
+                << "Usage: " << argv[0]
+                << " [--scenario <name>] [--seed <n>] [--duration <sec>] [--all]\n"
+                << "Scenarios: small, medium, large, high_cancel, market_heavy, iceberg_stop\n";
             return 1;
         }
     }

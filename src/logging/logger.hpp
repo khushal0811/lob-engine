@@ -49,10 +49,14 @@ private:
 
     static const char* level_str(Level l) {
         switch (l) {
-        case Level::Debug: return "DEBUG";
-        case Level::Info:  return "INFO";
-        case Level::Warn:  return "WARN";
-        case Level::Error: return "ERROR";
+        case Level::Debug:
+            return "DEBUG";
+        case Level::Info:
+            return "INFO";
+        case Level::Warn:
+            return "WARN";
+        case Level::Error:
+            return "ERROR";
         }
         return "UNKNOWN";
     }

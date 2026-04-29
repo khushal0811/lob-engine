@@ -100,7 +100,7 @@ TEST(MatchingEngineLimit, FifoPriority) {
     auto result = engine.submit(NewOrderEvent{make_order(3, Side::Buy, 100, 30)});
 
     ASSERT_EQ(result.trades.size(), 1u);
-    EXPECT_EQ(result.trades[0].passive_id, 1u);  // order 1 filled first
+    EXPECT_EQ(result.trades[0].passive_id, 1u); // order 1 filled first
     EXPECT_EQ(result.trades[0].quantity, 30u);
     // Order 2 still resting
     EXPECT_TRUE(engine.book().best_ask().has_value());
@@ -108,14 +108,14 @@ TEST(MatchingEngineLimit, FifoPriority) {
 
 TEST(MatchingEngineLimit, NoBookCrossingInvariant) {
     MatchingEngine engine;
-    engine.submit(NewOrderEvent{make_order(1, Side::Buy,  99, 10)});
+    engine.submit(NewOrderEvent{make_order(1, Side::Buy, 99, 10)});
     engine.submit(NewOrderEvent{make_order(2, Side::Sell, 101, 10)});
-    engine.submit(NewOrderEvent{make_order(3, Side::Buy,  98, 5)});
+    engine.submit(NewOrderEvent{make_order(3, Side::Buy, 98, 5)});
     engine.submit(NewOrderEvent{make_order(4, Side::Sell, 102, 5)});
 
     auto bb = engine.book().best_bid();
     auto ba = engine.book().best_ask();
     ASSERT_TRUE(bb.has_value());
     ASSERT_TRUE(ba.has_value());
-    EXPECT_LT(*bb, *ba);  // no crossed book
+    EXPECT_LT(*bb, *ba); // no crossed book
 }

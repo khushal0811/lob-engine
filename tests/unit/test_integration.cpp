@@ -17,23 +17,21 @@ static void check_orders_exist_in_levels(const OrderBook& book) {
                 << "Order " << id << " in bid level " << price << " not in id_map";
         }
         // total_volume should not underflow (basic sanity)
-        ASSERT_GE(level.total_volume(), 0u)
-            << "Negative volume at bid level " << price;
+        ASSERT_GE(level.total_volume(), 0u) << "Negative volume at bid level " << price;
     }
     for (const auto& [price, level] : book.asks()) {
         for (auto id : level.order_ids()) {
             ASSERT_TRUE(book.has_order(id))
                 << "Order " << id << " in ask level " << price << " not in id_map";
         }
-        ASSERT_GE(level.total_volume(), 0u)
-            << "Negative volume at ask level " << price;
+        ASSERT_GE(level.total_volume(), 0u) << "Negative volume at ask level " << price;
     }
 }
 
-
 static void check_bid_ordering(const OrderBook& book) {
     const auto& bids = book.bids();
-    if (bids.size() < 2) return;
+    if (bids.size() < 2)
+        return;
     auto it = bids.begin();
     Price prev = it->first;
     ++it;
@@ -46,7 +44,8 @@ static void check_bid_ordering(const OrderBook& book) {
 
 static void check_ask_ordering(const OrderBook& book) {
     const auto& asks = book.asks();
-    if (asks.size() < 2) return;
+    if (asks.size() < 2)
+        return;
     auto it = asks.begin();
     Price prev = it->first;
     ++it;
@@ -61,8 +60,7 @@ static void check_no_crossed_book(const OrderBook& book) {
     auto bb = book.best_bid();
     auto ba = book.best_ask();
     if (bb.has_value() && ba.has_value()) {
-        ASSERT_LT(*bb, *ba)
-            << "Crossed book: best_bid=" << *bb << " >= best_ask=" << *ba;
+        ASSERT_LT(*bb, *ba) << "Crossed book: best_bid=" << *bb << " >= best_ask=" << *ba;
     }
 }
 
@@ -86,16 +84,14 @@ static void check_id_map_consistency(const OrderBook& book) {
     }
 }
 
-static void check_stop_exclusivity(const OrderBook& book,
-                                   const std::vector<Order>& pending_stops) {
+static void check_stop_exclusivity(const OrderBook& book, const std::vector<Order>& pending_stops) {
     for (const auto& stop : pending_stops) {
         ASSERT_FALSE(book.has_order(stop.id))
             << "Stop order " << stop.id << " in order book instead of pending_stops";
     }
 }
 
-static void check_all_invariants(const OrderBook& book,
-                                 const std::vector<Order>& pending_stops) {
+static void check_all_invariants(const OrderBook& book, const std::vector<Order>& pending_stops) {
     check_orders_exist_in_levels(book);
     check_bid_ordering(book);
     check_ask_ordering(book);
@@ -126,7 +122,6 @@ TEST(Integration, InvariantCheckOver100kEvents) {
     // Final invariant check at the end
     check_all_invariants(engine.book(), engine.pending_stops());
 
-    EXPECT_GE(event_count, 100'000u)
-        << "Generator produced fewer than 100k events";
+    EXPECT_GE(event_count, 100'000u) << "Generator produced fewer than 100k events";
     SUCCEED() << "Processed " << event_count << " events with 0 invariant violations";
 }

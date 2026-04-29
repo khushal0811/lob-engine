@@ -1,10 +1,10 @@
 #include "benchmark_runner.hpp"
-#include "scenarios.hpp"
 #include "engine/matching_engine.hpp"
 #include "feed/synthetic_gen.hpp"
+#include "scenarios.hpp"
 #include <cstdint>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <time.h>
 
 namespace lob {
@@ -13,12 +13,10 @@ namespace lob {
 static inline uint64_t now_ns() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL +
-           static_cast<uint64_t>(ts.tv_nsec);
+    return static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL + static_cast<uint64_t>(ts.tv_nsec);
 }
 
-BenchmarkRunner::BenchmarkRunner(std::string scenario, uint64_t seed,
-                                   uint32_t duration_sec)
+BenchmarkRunner::BenchmarkRunner(std::string scenario, uint64_t seed, uint32_t duration_sec)
     : scenario_(std::move(scenario)), seed_(seed), duration_sec_(duration_sec) {
     config_ = get_scenario_config(scenario_);
 }
@@ -44,7 +42,8 @@ void BenchmarkRunner::run_scenario() {
         uint64_t t1 = now_ns();
         latency_.record(t1 - t0);
         ++events_processed_;
-        if (t1 - start > duration_ns) break;
+        if (t1 - start > duration_ns)
+            break;
     }
 }
 
@@ -53,8 +52,7 @@ void BenchmarkRunner::report() const {
     double throughput = static_cast<double>(events_processed_) / elapsed_sec;
 
     std::cout << "=== Benchmark: " << scenario_ << " ===\n"
-              << std::fixed << std::setprecision(0)
-              << "  Duration:    " << duration_sec_ << " s\n"
+              << std::fixed << std::setprecision(0) << "  Duration:    " << duration_sec_ << " s\n"
               << "  Events:      " << events_processed_ << "\n"
               << "  Throughput:  " << throughput << " ev/s\n"
               << "  p50:         " << latency_.p50() << " ns\n"

@@ -35,7 +35,7 @@ TEST(OrderBook, BestBidIsHighestPrice) {
     OrderBook book;
     book.insert_order(make_order(1, Side::Buy, 100, 10));
     book.insert_order(make_order(2, Side::Buy, 105, 10));
-    book.insert_order(make_order(3, Side::Buy, 98,  10));
+    book.insert_order(make_order(3, Side::Buy, 98, 10));
     EXPECT_EQ(*book.best_bid(), 105);
 }
 
@@ -70,7 +70,7 @@ TEST(OrderBook, EmptyBookReturnsNullopt) {
 
 TEST(OrderBook, MidPriceAndSpread) {
     OrderBook book;
-    book.insert_order(make_order(1, Side::Buy,  100, 10));
+    book.insert_order(make_order(1, Side::Buy, 100, 10));
     book.insert_order(make_order(2, Side::Sell, 110, 10));
     ASSERT_TRUE(book.mid_price().has_value());
     EXPECT_EQ(*book.mid_price(), 105);

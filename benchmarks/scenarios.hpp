@@ -42,8 +42,8 @@ inline EngineConfig get_scenario_config(const std::string& name) {
     return cfg;
 }
 
-inline const char* const kScenarioNames[] = {
-    "small", "medium", "large", "high_cancel", "market_heavy", "iceberg_stop"};
+inline const char* const kScenarioNames[] = {"small",       "medium",       "large",
+                                             "high_cancel", "market_heavy", "iceberg_stop"};
 inline constexpr std::size_t kScenarioCount = 6;
 
 } // namespace lob

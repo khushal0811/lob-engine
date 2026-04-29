@@ -3,18 +3,9 @@
 
 namespace lob {
 
-enum class Side : uint8_t {
-    Buy,
-    Sell
-};
+enum class Side : uint8_t { Buy, Sell };
 
-enum class OrderType : uint8_t {
-    Limit,
-    Market,
-    Stop,
-    StopLimit,
-    Iceberg
-};
+enum class OrderType : uint8_t { Limit, Market, Stop, StopLimit, Iceberg };
 
 enum class OrderStatus : uint8_t {
     New,         // accepted, not yet on book
@@ -40,17 +31,8 @@ enum class RejectReason : uint8_t {
     MarketExhausted
 };
 
-enum class EventType : uint8_t {
-    NewOrder,
-    CancelOrder,
-    ModifyOrder,
-    ReplaceOrder
-};
+enum class EventType : uint8_t { NewOrder, CancelOrder, ModifyOrder, ReplaceOrder };
 
-enum class AggressorSide : uint8_t {
-    Buy,
-    Sell,
-    None
-};
+enum class AggressorSide : uint8_t { Buy, Sell, None };
 
 } // namespace lob

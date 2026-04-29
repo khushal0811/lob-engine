@@ -11,14 +11,17 @@ class LatencyHistogram {
 public:
     void record(uint64_t latency_ns) {
         ++count_;
-        if (latency_ns > max_) max_ = latency_ns;
+        if (latency_ns > max_)
+            max_ = latency_ns;
 
         std::size_t idx = bucket_index(latency_ns);
-        if (idx < kBuckets) ++buckets_[idx];
+        if (idx < kBuckets)
+            ++buckets_[idx];
     }
 
     [[nodiscard]] uint64_t percentile(double p) const {
-        if (count_ == 0) return 0;
+        if (count_ == 0)
+            return 0;
         uint64_t target = static_cast<uint64_t>(count_ * p / 100.0);
         uint64_t cumulative = 0;
         for (std::size_t i = 0; i < kBuckets; ++i) {
@@ -50,15 +53,20 @@ private:
     uint64_t max_{0};
 
     static std::size_t bucket_index(uint64_t ns) {
-        if (ns < 1000) return ns;                                 // 0-999ns → bucket 0-999
-        if (ns < 1'000'000) return 1000 + (ns / 1000);            // 1µs-999µs → 1000-1999
-        if (ns < 10'000'000) return 2000 + (ns / 100'000);        // 1ms-9ms → 2000-2089
-        return kBuckets; // overflow — counted by max but not bucketed
+        if (ns < 1000)
+            return ns; // 0-999ns → bucket 0-999
+        if (ns < 1'000'000)
+            return 1000 + (ns / 1000); // 1µs-999µs → 1000-1999
+        if (ns < 10'000'000)
+            return 2000 + (ns / 100'000); // 1ms-9ms → 2000-2089
+        return kBuckets;                  // overflow — counted by max but not bucketed
     }
 
     static uint64_t bucket_to_ns(std::size_t idx) {
-        if (idx < 1000) return idx;
-        if (idx < 2000) return (idx - 1000) * 1000;
+        if (idx < 1000)
+            return idx;
+        if (idx < 2000)
+            return (idx - 1000) * 1000;
         return (idx - 2000) * 100'000;
     }
 };

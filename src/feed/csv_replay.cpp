@@ -27,17 +27,24 @@ std::vector<std::string> CsvReplayReader::split(const std::string& line, char de
 }
 
 Side CsvReplayReader::parse_side(const std::string& s) {
-    if (s == "BUY") return Side::Buy;
-    if (s == "SELL") return Side::Sell;
+    if (s == "BUY")
+        return Side::Buy;
+    if (s == "SELL")
+        return Side::Sell;
     throw std::runtime_error("Invalid side: " + s);
 }
 
 OrderType CsvReplayReader::parse_order_type(const std::string& s) {
-    if (s == "LIMIT") return OrderType::Limit;
-    if (s == "MARKET") return OrderType::Market;
-    if (s == "STOP") return OrderType::Stop;
-    if (s == "STOPLIMIT") return OrderType::StopLimit;
-    if (s == "ICEBERG") return OrderType::Iceberg;
+    if (s == "LIMIT")
+        return OrderType::Limit;
+    if (s == "MARKET")
+        return OrderType::Market;
+    if (s == "STOP")
+        return OrderType::Stop;
+    if (s == "STOPLIMIT")
+        return OrderType::StopLimit;
+    if (s == "ICEBERG")
+        return OrderType::Iceberg;
     throw std::runtime_error("Invalid order type: " + s);
 }
 
@@ -45,16 +52,19 @@ bool CsvReplayReader::next(OrderEvent& out) {
     std::string line;
     while (std::getline(file_, line)) {
         ++line_number_;
-        if (line.empty()) continue;
+        if (line.empty())
+            continue;
 
         try {
             auto fields = split(line, ',');
-            if (fields.empty()) continue;
+            if (fields.empty())
+                continue;
 
             const auto& event_type = fields[0];
 
             if (event_type == "NEW") {
-                if (fields.size() < 9) throw std::runtime_error("Not enough fields for NEW");
+                if (fields.size() < 9)
+                    throw std::runtime_error("Not enough fields for NEW");
                 Order o;
                 o.id = std::stoull(fields[1]);
                 o.side = parse_side(fields[2]);
@@ -69,14 +79,16 @@ bool CsvReplayReader::next(OrderEvent& out) {
                 out = NewOrderEvent{o};
                 return true;
             } else if (event_type == "CANCEL") {
-                if (fields.size() < 9) throw std::runtime_error("Not enough fields for CANCEL");
+                if (fields.size() < 9)
+                    throw std::runtime_error("Not enough fields for CANCEL");
                 CancelOrderEvent e;
                 e.order_id = std::stoull(fields[1]);
                 e.timestamp = std::stoull(fields[8]);
                 out = e;
                 return true;
             } else if (event_type == "MODIFY") {
-                if (fields.size() < 9) throw std::runtime_error("Not enough fields for MODIFY");
+                if (fields.size() < 9)
+                    throw std::runtime_error("Not enough fields for MODIFY");
                 ModifyOrderEvent e;
                 e.order_id = std::stoull(fields[1]);
                 e.new_price = fields[4].empty() ? 0 : std::stoll(fields[4]);
@@ -89,8 +101,8 @@ bool CsvReplayReader::next(OrderEvent& out) {
             }
         } catch (const std::exception& ex) {
             ++error_count_;
-            std::cerr << "CsvReplayReader: line " << line_number_
-                      << ": " << ex.what() << " — skipping\n";
+            std::cerr << "CsvReplayReader: line " << line_number_ << ": " << ex.what()
+                      << " — skipping\n";
         }
     }
     return false;

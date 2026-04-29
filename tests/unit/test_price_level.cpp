@@ -63,5 +63,5 @@ TEST(PriceLevel, ReduceFrontVolumeDoesNotPop) {
     level.push_back(1, 50);
     level.reduce_front_volume(20);
     EXPECT_EQ(level.total_volume(), 30u);
-    EXPECT_EQ(level.front(), 1u);  // order still there
+    EXPECT_EQ(level.front(), 1u); // order still there
 }

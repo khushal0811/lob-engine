@@ -12,11 +12,9 @@ class SnapshotManager {
 public:
     explicit SnapshotManager(std::string path);
 
-    bool save(const OrderBook& book, const std::vector<Order>& pending_stops,
-              uint64_t sequence);
+    bool save(const OrderBook& book, const std::vector<Order>& pending_stops, uint64_t sequence);
 
-    bool load(OrderBook& book, std::vector<Order>& pending_stops,
-              uint64_t& sequence);
+    bool load(OrderBook& book, std::vector<Order>& pending_stops, uint64_t& sequence);
 
 private:
     std::string path_;

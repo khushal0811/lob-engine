@@ -3,31 +3,43 @@
 
 using namespace lob;
 
-static Order make_limit(OrderId id, Side side, Price price, Quantity qty,
-                         Timestamp ts = 0) {
+static Order make_limit(OrderId id, Side side, Price price, Quantity qty, Timestamp ts = 0) {
     Order o;
-    o.id = id; o.side = side; o.type = OrderType::Limit;
-    o.price = price; o.quantity = qty; o.orig_qty = qty;
-    o.timestamp = ts; o.status = OrderStatus::New;
+    o.id = id;
+    o.side = side;
+    o.type = OrderType::Limit;
+    o.price = price;
+    o.quantity = qty;
+    o.orig_qty = qty;
+    o.timestamp = ts;
+    o.status = OrderStatus::New;
     return o;
 }
 
-static Order make_stop(OrderId id, Side side, Price stop_price, Quantity qty,
-                        Timestamp ts = 0) {
+static Order make_stop(OrderId id, Side side, Price stop_price, Quantity qty, Timestamp ts = 0) {
     Order o;
-    o.id = id; o.side = side; o.type = OrderType::Stop;
-    o.price = 0; o.stop_price = stop_price;
-    o.quantity = qty; o.orig_qty = qty;
-    o.timestamp = ts; o.status = OrderStatus::New;
+    o.id = id;
+    o.side = side;
+    o.type = OrderType::Stop;
+    o.price = 0;
+    o.stop_price = stop_price;
+    o.quantity = qty;
+    o.orig_qty = qty;
+    o.timestamp = ts;
+    o.status = OrderStatus::New;
     return o;
 }
 
 static Order make_stop_limit(OrderId id, Side side, Price stop_price, Price limit_price,
-                              Quantity qty) {
+                             Quantity qty) {
     Order o;
-    o.id = id; o.side = side; o.type = OrderType::StopLimit;
-    o.price = limit_price; o.stop_price = stop_price;
-    o.quantity = qty; o.orig_qty = qty;
+    o.id = id;
+    o.side = side;
+    o.type = OrderType::StopLimit;
+    o.price = limit_price;
+    o.stop_price = stop_price;
+    o.quantity = qty;
+    o.orig_qty = qty;
     o.status = OrderStatus::New;
     return o;
 }

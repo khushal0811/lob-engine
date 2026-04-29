@@ -104,7 +104,7 @@ TEST(MatchingEngineMarket, SellSweepsMultipleLevels) {
     auto result = engine.submit(NewOrderEvent{make_market(4, Side::Sell, 30)});
 
     ASSERT_EQ(result.trades.size(), 3u);
-    EXPECT_EQ(result.trades[0].price, 102);  // fills highest bid first
+    EXPECT_EQ(result.trades[0].price, 102); // fills highest bid first
     EXPECT_EQ(result.trades[1].price, 101);
     EXPECT_EQ(result.trades[2].price, 100);
     EXPECT_FALSE(engine.book().best_bid().has_value());

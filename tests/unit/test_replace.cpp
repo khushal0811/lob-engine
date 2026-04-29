@@ -78,5 +78,5 @@ TEST(ReplaceOrder, ReplacePreservesOtherOrdersOnBook) {
     EXPECT_TRUE(engine.book().has_order(2));
     EXPECT_TRUE(engine.book().has_order(3));
     EXPECT_EQ(engine.book().order_count(), 2u);
-    EXPECT_EQ(*engine.book().best_bid(), 99);  // order 2 is still best
+    EXPECT_EQ(*engine.book().best_bid(), 99); // order 2 is still best
 }
