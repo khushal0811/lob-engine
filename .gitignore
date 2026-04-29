@@ -1,0 +1,7 @@
+build/
+.cache/
+*.o
+*.a
+*.so
+compile_commands.json
+profile_large.txt
