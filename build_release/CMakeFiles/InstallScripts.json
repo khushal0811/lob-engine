@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_release/cmake_install.cmake",
+		"/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_release/src/cmake_install.cmake",
+		"/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_release/tests/cmake_install.cmake",
+		"/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_release/tools/cmake_install.cmake",
+		"/Users/khushalarora/Documents/Career/Project_1/lob-engine/build_release/benchmarks/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

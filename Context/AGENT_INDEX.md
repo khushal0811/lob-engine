@@ -27,10 +27,10 @@ Then read only the sections you need from the files listed below.
 - How to use: find the current phase and part number, read only that section
 
 ## Current project state
-- Current phase: 5
-- Current part: 5.6
-- Last completed part: 5.5 (lazy deletion optimisation)
-- Last commit: perf: lazy deletion in PriceLevel::remove(), O(n)→O(1)
+- Current phase: 6 (COMPLETE)
+- Current part: 6.5 (all parts done)
+- Last completed part: 6.5 (sample replay data)
+- Last commit: data: sample replay datasets for small_market, stop, and iceberg scenarios
 
 ## Rules for every session
 1. Read this file first

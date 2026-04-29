@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-gcc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+      - name: Build (GCC release)
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_CXX_COMPILER=g++
+          cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+  build-clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev
+      - name: Build (Clang release)
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build
+      - name: Test
+        run: cd build && ctest --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev
+      - name: Build (ASan + UBSan)
+        run: |
+          cmake -B build_san -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+                -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -g -fno-omit-frame-pointer" \
+                -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+                -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build_san
+      - name: Test under sanitizers
+        run: cd build_san && ctest --output-on-failure
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Check formatting
+        run: |
+          find src tests benchmarks tools -name '*.cpp' -o -name '*.hpp' \
+            | xargs clang-format --dry-run --Werror
+
+  replay-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+      - name: Build
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+      - name: Run replay validation
+        run: |
+          ./build/tools/lob_replay \
+            --events tests/replay/data/basic_limit.csv \
+            --expected tests/replay/data/basic_limit_expected.csv
+          ./build/tools/lob_replay \
+            --events tests/replay/data/stop_trigger.csv \
+            --expected tests/replay/data/stop_trigger_expected.csv
+
+  benchmark:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+      - name: Build release
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_CXX_FLAGS="-O2 -march=native"
+          cmake --build build
+      - name: Run benchmarks
+        run: |
+          for scenario in small medium large high_cancel market_heavy iceberg_stop; do
+            ./build/benchmarks/lob_bench --scenario $scenario --duration 10
+          done

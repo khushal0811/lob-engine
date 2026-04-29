@@ -10,6 +10,7 @@ add_executable(lob_tests
     unit/test_stop_orders.cpp
     unit/test_iceberg.cpp
     unit/test_phase4.cpp
+    unit/test_integration.cpp
 )
 
 target_link_libraries(lob_tests
