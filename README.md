@@ -253,6 +253,12 @@ Documented in [docs/performance.md](docs/performance.md):
 4. **FIX protocol adapter** — accept orders via standard financial messaging
 5. **WebSocket market data feed** — real-time BBO and trade streaming
 
+## Visual interface — lob-ui
+
+A companion desktop application ([lob-ui](https://github.com/khushal0811/lob-ui)) wraps this library with a real-time Qt6 UI. It visualises the live order book, trade tape, and metrics — and lets you submit orders and watch the engine process them in real time.
+
+The UI runs the engine on a background thread, communicating exclusively through typed Qt signals. The engine code is unchanged — `lob-ui` links against the pre-built static library (`liblob_core.a`) produced by this repo.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
