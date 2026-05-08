@@ -1,14 +1,14 @@
-# lob — high-performance C++ limit order book and matching engine
+# lob-engine — high-performance C++ limit order book and exchange service
 
-> A production-grade, single-threaded matching engine implementing price-time priority with support for limit, market, stop, stop-limit, and iceberg orders — built from scratch in C++20 with zero external runtime dependencies.
+> A production-grade, event-driven exchange service built on a deterministic price-time priority matching engine. Supports 25 instruments, ZeroMQ client communication, lock-free inter-thread messaging, and async NDJSON replay logging — all in C++20.
 
 [![CI](https://github.com/khushal0811/lob-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/khushal0811/lob-engine/actions/workflows/ci.yml)
 
 ## What this is
 
-A complete limit order book (LOB) and matching engine written in C++20. It processes order events (new, cancel, modify, replace) and produces trades, execution reports, and rejections. The engine is deterministic, fully benchmarked, and sanitizer-clean.
+A complete limit order book (LOB), matching engine, **and exchange service** written in C++20. External clients connect over ZeroMQ, submit orders as JSON, and receive standardised market data events in real time. The engine processes order events (new, cancel, modify, replace) and produces trades, execution reports, and rejections. The engine is deterministic, fully benchmarked, and sanitizer-clean.
 
-This is **not** a trading bot or strategy backtester. It is the **exchange-side matching core** — the component that decides which orders trade against each other and at what price.
+This is **not** a trading bot or strategy backtester. It is the **exchange-side matching core** — the component that decides which orders trade against each other and at what price — now exposed as a reusable networked service.
 
 ## Why limit order books matter
 
@@ -21,11 +21,75 @@ Every electronic exchange — equities, futures, options, crypto — runs a matc
 
 This project implements the same price-time priority algorithm used by the NYSE, NASDAQ, CME, and most modern exchanges.
 
-## Architecture
+---
+
+## Exchange Service Architecture
+
+```
+                External Clients
+         ┌──────────────────────────┐
+         │   Any ZMQ PUSH client    │
+         │   (Python, C++, Rust…)   │
+         └───────────┬──────────────┘
+                     │  JSON order message
+                     ▼
+              tcp://*:5555  ZMQ PULL
+                     │
+    ┌────────────────┼──────────────────────────────────────────┐
+    │ Gateway        │                                           │
+    │                ▼                                           │
+    │  [T1 — Receiver Thread]                                    │
+    │    zmq_recv() → deserialize_order() → inbound SPSC queue  │
+    │                │                                           │
+    │                ▼                                           │
+    │  [T2 — Exchange Thread]  ← DEDICATED, reserved            │
+    │    pop queue → ExchangeManager::process(msg)              │
+    │      └─ routes to engine_map["STOCK_N"]                   │
+    │      └─ MatchingEngine::submit()   (unchanged core)       │
+    │      └─ MatchResult → vector<ExchangeEvent>               │
+    │    → dispatcher_.enqueue(events)   [T2→T3 SPSC]          │
+    │    → replay_.log(events)           [T2→T4 SPSC]          │
+    │    every 100ms: snapshot_all() → enqueue 25 snapshots     │
+    │                │                                           │
+    │       ┌────────┴────────┐                                 │
+    │       ▼                 ▼                                  │
+    │  [T3 — Publisher]  [T4 — Replay Logger]                   │
+    │  serialize → PUB   NDJSON → disk                          │
+    │                │                                           │
+    └────────────────┼──────────────────────────────────────────┘
+                     │  "TOPIC {json_payload}"
+                     ▼
+              tcp://*:5556  ZMQ PUB
+                     │
+    ┌────────────────┼──────────────────────┐
+    │ SUB subscribers (filter by topic)     │
+    │  TRADE / BOOK / SNAPSHOT /            │
+    │  ACCEPTED / REJECTED / CANCELED       │
+    └───────────────────────────────────────┘
+```
+
+### Thread model
+
+| Thread | Role | Constraints |
+|--------|------|-------------|
+| **T1** Receiver | `zmq_recv()` → JSON parse → inbound SPSC queue | Never touches engine state |
+| **T2** Exchange | Pops orders, runs all 25 engines, enqueues events | **Sole owner** of all `MatchingEngine` instances — no locks needed |
+| **T3** Publisher | Pops events, JSON serializes, `zmq_send()` | Never touches engine state |
+| **T4** Replay Logger | Pops pre-serialized strings, writes NDJSON to disk | Pure I/O — no business logic |
+
+All inter-thread communication uses lock-free SPSC ring buffers. If a buffer is full, the event is dropped and an atomic counter is incremented. **T2 never waits.**
+
+### Instruments
+
+25 synthetic instruments: `STOCK_1` through `STOCK_25`. Each has its own independent `MatchingEngine` instance managed by `ExchangeManager`. All 25 are processed sequentially on T2 — zero lock contention.
+
+---
+
+## Matching engine architecture
 
 ```
                     ┌──────────────────────────────────────────┐
-                    │            Matching Engine               │
+                    │            MatchingEngine                │
                     │                                          │
   OrderEvent ──────>│  submit()                                │
   (variant)         │    ├── process_new_order()               │
@@ -39,27 +103,17 @@ This project implements the same price-time priority algorithm used by the NYSE,
                     │                                          │         rejections)
                     │  ┌─────────────────────────────────┐     │
                     │  │          OrderBook               │     │
-                    │  │                                  │     │
                     │  │  bids_: map<Price, PriceLevel>   │     │
                     │  │         (descending)             │     │
-                    │  │                                  │     │
                     │  │  asks_: map<Price, PriceLevel>   │     │
                     │  │         (ascending)              │     │
-                    │  │                                  │     │
                     │  │  id_map_: unordered_map<Id,Order>│     │
                     │  └─────────────────────────────────┘     │
-                    │                                          │
                     │  pending_stops_: vector<Order>            │
                     └──────────────────────────────────────────┘
-
-  Each PriceLevel:
-    ┌──────────────────────────────────┐
-    │  price: 10050                    │
-    │  total_volume: 350              │
-    │  queue: [id=1] [id=4] [id=7]    │  ← FIFO order (front = highest priority)
-    │  cancelled_: {id=2}             │  ← lazy deletion set
-    └──────────────────────────────────┘
 ```
+
+---
 
 ## Order types supported
 
@@ -78,30 +132,165 @@ This project implements the same price-time priority algorithm used by the NYSE,
 3. **Aggressive matching**: New limit orders are matched immediately against resting orders before they rest.
 4. **Priority loss**: Orders lose time priority on quantity increase, price change, or iceberg replenishment. Quantity reduction preserves priority.
 
-## Order lifecycle
+---
 
+## Building
+
+### Prerequisites
+
+- C++20 compiler (GCC 11+, Clang 14+, or AppleClang 15+)
+- CMake 3.20+
+- Google Test
+- **ZeroMQ** (for the exchange service)
+- **nlohmann/json** (for JSON serialization)
+
+### macOS
+
+```bash
+brew install cmake googletest zeromq nlohmann-json
+cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release
+cmake --build build_release -j$(sysctl -n hw.logicalcpu)
 ```
-NEW ──> Validate ──> Match against opposite side
-                         │
-                    ┌────┴────┐
-                    │         │
-                Fully      Partial
-                Filled      Fill
-                  │          │
-                FILLED    RESTING (remainder on book)
-                             │
-                    ┌────────┼────────┐
-                    │        │        │
-                 CANCEL   MODIFY   REPLACE
-                    │        │        │
-                CANCELLED  (may     (old removed,
-                           lose      new submitted)
-                          priority)
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt-get install cmake libgtest-dev g++ libzmq3-dev nlohmann-json3-dev
+cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
+cmake --build build_release -j$(nproc)
 ```
+
+---
+
+## Running the exchange service
+
+```bash
+# Start with defaults (PULL: 5555, PUB: 5556, snapshot every 100ms)
+./build_release/src/lob_exchange
+
+# Custom configuration
+./build_release/src/lob_exchange \
+  --pull tcp://*:5555 \
+  --pub  tcp://*:5556 \
+  --snapshot-interval 100 \
+  --log-path logs/replay.ndjson
+```
+
+### Sending orders (Python example)
+
+```python
+import zmq, json
+
+ctx = zmq.Context()
+
+# Send orders
+push = ctx.socket(zmq.PUSH)
+push.connect("tcp://localhost:5555")
+
+push.send_string(json.dumps({
+    "order_id": 1, "client_id": 42, "symbol": "STOCK_7",
+    "action": "NEW_ORDER", "side": "BUY", "type": "LIMIT",
+    "quantity": 100, "price": 10050,
+    "stop_price": 0, "peak_qty": 0, "timestamp": 0
+}))
+
+# Receive events
+sub = ctx.socket(zmq.SUB)
+sub.connect("tcp://localhost:5556")
+sub.setsockopt(zmq.SUBSCRIBE, b"")        # all topics
+# sub.setsockopt(zmq.SUBSCRIBE, b"TRADE") # or filter by topic
+
+while True:
+    print(sub.recv_string())
+```
+
+### ZMQ topic reference
+
+| Topic | Event | When emitted |
+|-------|-------|--------------|
+| `ACCEPTED` | Order placed on book | Every valid new order |
+| `REJECTED` | Order failed validation | Invalid price, duplicate ID, etc. |
+| `CANCELED` | Order removed from book | Successful cancel request |
+| `TRADE` | Fill between two orders | Every match |
+| `BOOK` | Best bid/ask update | After every order action |
+| `SNAPSHOT` | Full 25-symbol depth | Every `snapshot-interval` ms |
+
+### JSON wire format
+
+**Inbound order:**
+```json
+{
+  "order_id": 1, "client_id": 42, "symbol": "STOCK_7",
+  "action": "NEW_ORDER",
+  "side": "BUY", "type": "LIMIT",
+  "quantity": 100, "price": 10050,
+  "stop_price": 0, "peak_qty": 0, "timestamp": 0
+}
+```
+
+**Outbound trade event:**
+```
+TRADE {"ts":1715200000000000000,"type":"TRADE","symbol":"STOCK_7","buy_id":1,"sell_id":2,"price":10050,"qty":100}
+```
+
+**Replay log** (`logs/replay.ndjson`) — one JSON object per line, append-only.
+
+---
+
+## Running tests
+
+```bash
+cd build_release && ctest --output-on-failure
+```
+
+All 78 tests pass in under 1 second.
+
+### Running sample scenarios
+
+```bash
+# Run the small market scenario
+./build_release/tools/lob_replay --events data/sample-replay/small_market.csv
+
+# Run and validate against expected output
+./build_release/tools/lob_replay \
+  --events data/sample-replay/iceberg_scenario.csv \
+  --expected data/sample-replay/iceberg_scenario_expected.csv
+```
+
+See [data/sample-replay/README.md](data/sample-replay/README.md) for the CSV format and available scenarios.
+
+### Sanitizer build
+
+```bash
+cmake -B build_asan -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -g" \
+      -DCMAKE_CXX_COMPILER=clang++
+cmake --build build_asan
+./build_asan/tests/lob_tests
+```
+
+---
+
+## Running benchmarks
+
+```bash
+cmake -B build_bench -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CXX_FLAGS="-O2 -march=native"
+cmake --build build_bench
+./build_bench/benchmarks/lob_bench --all --duration 10
+```
+
+Or run a single scenario:
+
+```bash
+./build_bench/benchmarks/lob_bench --scenario high_cancel --duration 10
+```
+
+---
 
 ## Benchmark results
 
-Measured on Apple Silicon (ARM64), AppleClang 17.0.0, `-O2 -march=native`, single-threaded.
+Measured on Apple Silicon (ARM64), AppleClang 17.0.0, `-O2 -march=native`, single-threaded engine core.
 
 ### Before optimisation (O(n) deque erase on cancel)
 
@@ -136,128 +325,73 @@ Measured on Apple Silicon (ARM64), AppleClang 17.0.0, `-O2 -march=native`, singl
 | market_heavy | 2,436,656 | 3,861,558 | **+58%** |
 | iceberg_stop | 2,111,828 | 3,452,091 | **+63%** |
 
+Exchange service overhead: **zero** — gateway threads are fully isolated from the matching path. Engine throughput is unchanged at 3.4M ev/s (medium scenario).
+
 See [docs/performance.md](docs/performance.md) for full profiling analysis and methodology.
+
+---
 
 ## Optimisation notes
 
 Profiling with macOS `sample` revealed that `PriceLevel::remove()` consumed 24% of CPU time due to O(n) `std::deque::erase()` calling `memmove` on every cancel. The fix: a lazy deletion pattern using `std::unordered_set<OrderId>` — cancelled IDs are marked in a hash set and lazily drained from the deque front during matching. This reduced cancel cost from O(n) to O(1) and improved throughput by 51–144% on matching-heavy workloads.
 
-## Replay and snapshot
-
-- **Replay tool** (`lob_replay`): Reads a CSV event sequence, feeds it through the engine, and optionally compares output against expected results. Used for deterministic regression testing.
-- **Binary snapshot**: Serialises the full order book state (all orders, levels, pending stops, sequence number) to a binary file. Can be loaded to resume processing from a checkpoint.
-
-## Building
-
-### Prerequisites
-
-- C++20 compiler (GCC 11+, Clang 14+, or AppleClang 15+)
-- CMake 3.20+
-- Google Test (installed via package manager)
-
-### macOS
-
-```bash
-brew install cmake googletest
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
-### Linux (Ubuntu/Debian)
-
-```bash
-sudo apt-get install cmake libgtest-dev g++
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
-cmake --build build
-```
-
-## Running tests
-
-```bash
-cd build && ctest --output-on-failure
-```
-
-All 77+ tests should pass in under 1 second.
-
-### Running sample scenarios
-
-The engine comes with sample CSV datasets demonstrating different order types (limit, market, stop, iceberg). You can replay them and see the trades generated:
-
-```bash
-# Run the small market scenario
-./build/tools/lob_replay --events data/sample-replay/small_market.csv
-
-# Run and validate against expected output
-./build/tools/lob_replay \
-  --events data/sample-replay/iceberg_scenario.csv \
-  --expected data/sample-replay/iceberg_scenario_expected.csv
-```
-
-See [data/sample-replay/README.md](data/sample-replay/README.md) for full details on the CSV format and available scenarios.
-
-### Sanitizer build
-
-```bash
-cmake -B build_asan -DCMAKE_BUILD_TYPE=Debug \
-      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -g" \
-      -DCMAKE_CXX_COMPILER=clang++
-cmake --build build_asan
-./build_asan/tests/lob_tests
-```
-
-## Running benchmarks
-
-```bash
-cmake -B build_bench -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_CXX_FLAGS="-O2 -march=native"
-cmake --build build_bench
-./build_bench/benchmarks/lob_bench --all --duration 10
-```
-
-Or run a single scenario:
-
-```bash
-./build_bench/benchmarks/lob_bench --scenario high_cancel --duration 10
-```
+---
 
 ## Project structure
 
 ```
 src/
-  core/           Order, Trade, Event types, enums, config, SPSC queue
-  book/           PriceLevel (FIFO queue + lazy deletion), OrderBook
-  engine/         MatchingEngine (limit, market, stop, iceberg)
-  feed/           CSV replay reader, synthetic order generator
-  logging/        Async JSON-lines logger (lock-free SPSC)
-  metrics/        Latency histogram, counters
-  snapshot/       Binary serialisation/deserialisation
+  core/             Order, Trade, Event types, enums, config, SPSC queue
+  book/             PriceLevel (FIFO + lazy deletion), OrderBook
+  engine/           MatchingEngine (limit, market, stop, iceberg)
+  feed/             CSV replay reader, synthetic order generator
+  logging/          Async JSON-lines logger (lock-free SPSC)
+  metrics/          Latency histogram, counters
+  snapshot/         Binary serialisation/deserialisation
+
+  events/           External wire-format types (OrderMessage, ExchangeEvent)
+  serialization/    JSON ↔ event conversion (nlohmann/json, publisher thread only)
+  gateway/          ExchangeManager (25 engines), EventDispatcher (T3),
+                    ReplayLogger (T4), Gateway (4-thread coordinator)
+  exchange_main.cpp lob_exchange binary entry point
 
 tests/
-  unit/           77+ Google Test cases
-  replay/data/    Deterministic replay fixtures (CSV in → CSV expected)
+  unit/             78 Google Test cases
 
-benchmarks/       Benchmark harness with 6 scenarios
+benchmarks/         Benchmark harness with 6 scenarios
 
-tools/            lob_replay CLI tool
+tools/              lob_replay CLI tool
 
-docs/             Engine design, data structures, performance, testing
+docs/               Engine design, data structures, performance, testing
 ```
 
-## Future work
+---
 
-Documented in [docs/performance.md](docs/performance.md):
+## Replay and snapshot
+
+- **Replay logger** (`logs/replay.ndjson`): Every exchange event is written to an append-only NDJSON file by the dedicated T4 writer thread. Format: one JSON object per line.
+- **Replay tool** (`lob_replay`): Reads a CSV event sequence, feeds it through the engine, and optionally compares output against expected results. Used for deterministic regression testing.
+- **Binary snapshot**: Serialises the full order book state (all orders, levels, pending stops, sequence number) to a binary file. Can be loaded to resume processing from a checkpoint.
+
+---
+
+## Future work
 
 1. **`unordered_map::reserve`** for order ID map — eliminate rehash overhead
 2. **Flat sorted vector** for shallow books (<15 levels) — better cache locality
 3. **Priority queue for stop orders** — O(log n) trigger evaluation instead of O(n)
-4. **FIX protocol adapter** — accept orders via standard financial messaging
-5. **WebSocket market data feed** — real-time BBO and trade streaming
+4. **FIX protocol adapter** — accept orders via standard financial messaging alongside ZMQ
+5. **Engine sharding** — partition the 25 instruments across multiple CPU cores, each with its own dedicated exchange thread
+
+---
 
 ## Visual interface — lob-ui
 
 A companion desktop application ([lob-ui](https://github.com/khushal0811/lob-ui)) wraps this library with a real-time Qt6 UI. It visualises the live order book, trade tape, and metrics — and lets you submit orders and watch the engine process them in real time.
 
 The UI runs the engine on a background thread, communicating exclusively through typed Qt signals. The engine code is unchanged — `lob-ui` links against the pre-built static library (`liblob_core.a`) produced by this repo.
+
+---
 
 ## License
 
