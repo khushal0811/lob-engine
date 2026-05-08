@@ -10,6 +10,13 @@ add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 # Dependencies — use locally installed GoogleTest
 include(cmake/googletest.cmake)
 
+# ZeroMQ (system install via Homebrew)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZMQ REQUIRED libzmq)
+
+# nlohmann/json (system install via Homebrew)
+find_package(nlohmann_json REQUIRED)
+
 # Enable testing
 enable_testing()
 

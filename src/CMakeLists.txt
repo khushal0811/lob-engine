@@ -1,3 +1,21 @@
+# ---------------------------------------------------------------------------
+# New subsystems: events, serialization, gateway
+# ---------------------------------------------------------------------------
+add_subdirectory(events)
+add_subdirectory(serialization)
+add_subdirectory(gateway)
+
+# ---------------------------------------------------------------------------
+# Exchange binary
+# ---------------------------------------------------------------------------
+add_executable(lob_exchange exchange_main.cpp)
+target_include_directories(lob_exchange PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(lob_exchange PRIVATE lob_gateway ${ZMQ_LINK_LIBRARIES})
+target_include_directories(lob_exchange PRIVATE ${ZMQ_INCLUDE_DIRS})
+
+# ---------------------------------------------------------------------------
+# Core engine library (unchanged)
+# ---------------------------------------------------------------------------
 add_library(lob_core STATIC
     core/core.cpp
     core/enums.hpp
