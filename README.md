@@ -36,26 +36,26 @@ This project implements the same price-time priority algorithm used by the NYSE,
               tcp://*:5555  ZMQ PULL
                      │
     ┌────────────────┼──────────────────────────────────────────┐
-    │ Gateway        │                                           │
-    │                ▼                                           │
-    │  [T1 — Receiver Thread]                                    │
+    │ Gateway        │                                          │
+    │                ▼                                          │
+    │  [T1 — Receiver Thread]                                   │
     │    zmq_recv() → deserialize_order() → inbound SPSC queue  │
-    │                │                                           │
-    │                ▼                                           │
+    │                │                                          │
+    │                ▼                                          │
     │  [T2 — Exchange Thread]  ← DEDICATED, reserved            │
     │    pop queue → ExchangeManager::process(msg)              │
     │      └─ routes to engine_map["STOCK_N"]                   │
     │      └─ MatchingEngine::submit()   (unchanged core)       │
     │      └─ MatchResult → vector<ExchangeEvent>               │
-    │    → dispatcher_.enqueue(events)   [T2→T3 SPSC]          │
-    │    → replay_.log(events)           [T2→T4 SPSC]          │
+    │    → dispatcher_.enqueue(events)   [T2→T3 SPSC]           │
+    │    → replay_.log(events)           [T2→T4 SPSC]           │
     │    every 100ms: snapshot_all() → enqueue 25 snapshots     │
-    │                │                                           │
+    │                │                                          │
     │       ┌────────┴────────┐                                 │
-    │       ▼                 ▼                                  │
+    │       ▼                 ▼                                 │
     │  [T3 — Publisher]  [T4 — Replay Logger]                   │
     │  serialize → PUB   NDJSON → disk                          │
-    │                │                                           │
+    │                │                                          │
     └────────────────┼──────────────────────────────────────────┘
                      │  "TOPIC {json_payload}"
                      ▼
@@ -93,23 +93,23 @@ All inter-thread communication uses lock-free SPSC ring buffers. If a buffer is 
                     │                                          │
   OrderEvent ──────>│  submit()                                │
   (variant)         │    ├── process_new_order()               │
-                    │    │     ├── match_limit()                │
-                    │    │     ├── match_market()               │
-                    │    │     ├── evaluate_stop_triggers()     │
-                    │    │     └── replenish_iceberg()          │
-                    │    ├── process_cancel()                   │──────> MatchResult
-                    │    ├── process_modify()                   │        (trades,
-                    │    └── process_replace()                  │         reports,
+                    │    │     ├── match_limit()               │
+                    │    │     ├── match_market()              │
+                    │    │     ├── evaluate_stop_triggers()    │
+                    │    │     └── replenish_iceberg()         │
+                    │    ├── process_cancel()                  │──────> MatchResult
+                    │    ├── process_modify()                  │        (trades,
+                    │    └── process_replace()                 │         reports,
                     │                                          │         rejections)
                     │  ┌─────────────────────────────────┐     │
-                    │  │          OrderBook               │     │
-                    │  │  bids_: map<Price, PriceLevel>   │     │
-                    │  │         (descending)             │     │
-                    │  │  asks_: map<Price, PriceLevel>   │     │
-                    │  │         (ascending)              │     │
-                    │  │  id_map_: unordered_map<Id,Order>│     │
+                    │  │          OrderBook               │    │
+                    │  │  bids_: map<Price, PriceLevel>   │    │
+                    │  │         (descending)             │    │
+                    │  │  asks_: map<Price, PriceLevel>   │    │
+                    │  │         (ascending)              │    │
+                    │  │  id_map_: unordered_map<Id,Order>│    │
                     │  └─────────────────────────────────┘     │
-                    │  pending_stops_: vector<Order>            │
+                    │  pending_stops_: vector<Order>           │
                     └──────────────────────────────────────────┘
 ```
 
