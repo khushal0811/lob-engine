@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev pkg-config libzmq3-dev nlohmann-json3-dev
       - name: Build (GCC release)
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev pkg-config libzmq3-dev nlohmann-json3-dev
       - name: Build (Clang release)
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang libgtest-dev pkg-config libzmq3-dev nlohmann-json3-dev
       - name: Build (ASan + UBSan)
         run: |
           cmake -B build_san -G Ninja -DCMAKE_BUILD_TYPE=Debug \
@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev pkg-config libzmq3-dev nlohmann-json3-dev
       - name: Build
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -98,7 +98,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev pkg-config libzmq3-dev nlohmann-json3-dev
       - name: Build release
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
