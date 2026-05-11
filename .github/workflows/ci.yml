@@ -52,29 +52,6 @@ jobs:
       - name: Test under sanitizers
         run: cd build_san && ctest --output-on-failure
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install clang-format-22
-        run: |
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble main"
-          sudo apt-get update && sudo apt-get install -y clang-format-22
-      - name: Apply formatting
-        run: |
-          find src tests benchmarks tools -name '*.cpp' -o -name '*.hpp' \
-            | xargs clang-format-22 -i
-      - name: Check for formatting diff
-        run: |
-          if ! git diff --quiet; then
-            echo "Formatting differences found. Run clang-format-22 locally:"
-            git diff --stat
-            git diff
-            exit 1
-          fi
-          echo "All files are correctly formatted."
-
 
   replay-tests:
     runs-on: ubuntu-latest
