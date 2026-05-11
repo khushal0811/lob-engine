@@ -140,6 +140,7 @@ All inter-thread communication uses lock-free SPSC ring buffers. If a buffer is 
 
 - C++20 compiler (GCC 11+, Clang 14+, or AppleClang 15+)
 - CMake 3.20+
+- pkg-config
 - Google Test
 - **ZeroMQ** (for the exchange service)
 - **nlohmann/json** (for JSON serialization)
@@ -155,7 +156,7 @@ cmake --build build_release -j$(sysctl -n hw.logicalcpu)
 ### Linux (Ubuntu/Debian)
 
 ```bash
-sudo apt-get install cmake libgtest-dev g++ libzmq3-dev nlohmann-json3-dev
+sudo apt-get install cmake pkg-config libgtest-dev g++ libzmq3-dev nlohmann-json3-dev
 cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
 cmake --build build_release -j$(nproc)
 ```
