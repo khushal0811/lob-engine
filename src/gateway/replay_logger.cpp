@@ -8,16 +8,13 @@ namespace lob::gateway {
 // Construction / destruction
 // ---------------------------------------------------------------------------
 
-ReplayLogger::ReplayLogger(std::string path, uint32_t queue_capacity)
-    : path_(std::move(path)) {
+ReplayLogger::ReplayLogger(std::string path, uint32_t queue_capacity) : path_(std::move(path)) {
     assert((queue_capacity & (queue_capacity - 1)) == 0 && "capacity must be power of 2");
     buffer_.resize(queue_capacity);
     mask_ = queue_capacity - 1;
 }
 
-ReplayLogger::~ReplayLogger() {
-    stop();
-}
+ReplayLogger::~ReplayLogger() { stop(); }
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -44,7 +41,7 @@ void ReplayLogger::stop() {
 // ---------------------------------------------------------------------------
 
 void ReplayLogger::log(const events::ExchangeEvent& ev) noexcept {
-    const uint32_t tail      = tail_.load(std::memory_order_relaxed);
+    const uint32_t tail = tail_.load(std::memory_order_relaxed);
     const uint32_t next_tail = (tail + 1) & mask_;
     if (next_tail == head_.load(std::memory_order_acquire)) {
         drops_.fetch_add(1, std::memory_order_relaxed);

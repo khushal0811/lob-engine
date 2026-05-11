@@ -48,27 +48,27 @@ public:
 
 private:
     struct Instrument {
-        std::string    symbol;
+        std::string symbol;
         MatchingEngine engine;
 
         Instrument(std::string sym, EngineConfig cfg)
             : symbol(std::move(sym)), engine(std::move(cfg)) {}
 
         // Non-copyable, movable.
-        Instrument(const Instrument&)            = delete;
+        Instrument(const Instrument&) = delete;
         Instrument& operator=(const Instrument&) = delete;
-        Instrument(Instrument&&)                 = default;
-        Instrument& operator=(Instrument&&)      = default;
+        Instrument(Instrument&&) = default;
+        Instrument& operator=(Instrument&&) = default;
     };
 
-    std::vector<Instrument>                      instruments_;
+    std::vector<Instrument> instruments_;
     std::unordered_map<std::string, std::size_t> index_;
 
     // Translate MatchResult → ExchangeEvents.
     // book is the engine's book after matching (for BookUpdatedEvent).
     std::vector<events::ExchangeEvent> translate_result(const events::OrderMessage& msg,
-                                                        const MatchResult&          res,
-                                                        const OrderBook&            book) const;
+                                                        const MatchResult& res,
+                                                        const OrderBook& book) const;
 
     static uint64_t now_ns() noexcept;
 };

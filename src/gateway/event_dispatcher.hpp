@@ -27,7 +27,7 @@ public:
     ~EventDispatcher();
 
     // Non-copyable, non-movable.
-    EventDispatcher(const EventDispatcher&)            = delete;
+    EventDispatcher(const EventDispatcher&) = delete;
     EventDispatcher& operator=(const EventDispatcher&) = delete;
 
     // Bind the PUB socket and start the publisher thread.
@@ -51,15 +51,15 @@ public:
 private:
     // Dynamic SPSC ring buffer — same pattern as lob::Logger.
     std::vector<events::ExchangeEvent> buffer_;
-    uint32_t                           mask_;
-    alignas(64) std::atomic<uint32_t>  head_{0};
-    alignas(64) std::atomic<uint32_t>  tail_{0};
-    std::atomic<uint64_t>              drops_{0};
+    uint32_t mask_;
+    alignas(64) std::atomic<uint32_t> head_{0};
+    alignas(64) std::atomic<uint32_t> tail_{0};
+    std::atomic<uint64_t> drops_{0};
 
     std::atomic<bool> running_{false};
-    std::thread       pub_thread_;
-    void*             zmq_ctx_{nullptr};
-    void*             zmq_pub_{nullptr};
+    std::thread pub_thread_;
+    void* zmq_ctx_{nullptr};
+    void* zmq_pub_{nullptr};
 
     void publisher_loop();
 };

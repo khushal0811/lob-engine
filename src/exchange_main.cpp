@@ -12,27 +12,24 @@ namespace {
 
 std::atomic<bool> g_shutdown{false};
 
-void signal_handler(int /*sig*/) noexcept {
-    g_shutdown.store(true, std::memory_order_release);
-}
+void signal_handler(int /*sig*/) noexcept { g_shutdown.store(true, std::memory_order_release); }
 
 void install_signal_handler() {
     struct sigaction sa{};
     sa.sa_handler = signal_handler;
     sigemptyset(&sa.sa_mask);
-    sigaction(SIGINT,  &sa, nullptr);
+    sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 }
 
 void print_usage(const char* prog) {
-    std::cerr
-        << "Usage: " << prog << " [OPTIONS]\n"
-        << "\nOptions:\n"
-        << "  --pull <endpoint>          ZMQ PULL endpoint (default: tcp://*:5555)\n"
-        << "  --pub  <endpoint>          ZMQ PUB  endpoint (default: tcp://*:5556)\n"
-        << "  --snapshot-interval <ms>   Snapshot interval ms (default: 100)\n"
-        << "  --log-path <path>          Replay log path (default: logs/replay.ndjson)\n"
-        << "\nInstruments: STOCK_1 … STOCK_25\n";
+    std::cerr << "Usage: " << prog << " [OPTIONS]\n"
+              << "\nOptions:\n"
+              << "  --pull <endpoint>          ZMQ PULL endpoint (default: tcp://*:5555)\n"
+              << "  --pub  <endpoint>          ZMQ PUB  endpoint (default: tcp://*:5556)\n"
+              << "  --snapshot-interval <ms>   Snapshot interval ms (default: 100)\n"
+              << "  --log-path <path>          Replay log path (default: logs/replay.ndjson)\n"
+              << "\nInstruments: STOCK_1 … STOCK_25\n";
 }
 
 } // namespace
@@ -66,17 +63,15 @@ int main(int argc, char** argv) {
 
     // Ensure log directory exists
     try {
-        std::filesystem::path log_dir =
-            std::filesystem::path(cfg.replay_log_path).parent_path();
+        std::filesystem::path log_dir = std::filesystem::path(cfg.replay_log_path).parent_path();
         if (!log_dir.empty())
             std::filesystem::create_directories(log_dir);
     } catch (const std::exception& ex) {
         std::cerr << "[lob-exchange] Warning: could not create log dir: " << ex.what() << "\n";
     }
 
-    std::cout << "[lob-exchange] Initializing exchange with "
-              << lob::gateway::kInstrumentCount << " instruments (STOCK_1…STOCK_"
-              << lob::gateway::kInstrumentCount << ")\n";
+    std::cout << "[lob-exchange] Initializing exchange with " << lob::gateway::kInstrumentCount
+              << " instruments (STOCK_1…STOCK_" << lob::gateway::kInstrumentCount << ")\n";
 
     install_signal_handler();
 

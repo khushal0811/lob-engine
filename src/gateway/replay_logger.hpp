@@ -29,7 +29,7 @@ public:
     ~ReplayLogger();
 
     // Non-copyable, non-movable.
-    ReplayLogger(const ReplayLogger&)            = delete;
+    ReplayLogger(const ReplayLogger&) = delete;
     ReplayLogger& operator=(const ReplayLogger&) = delete;
 
     void start();
@@ -52,15 +52,15 @@ private:
     // Alternative considered: push ExchangeEvent and format in T4.
     // Decision: format on T2 to keep T4 as a pure I/O thread, and because
     // string formatting is fast compared to file I/O.
-    std::vector<std::string>          buffer_;
-    uint32_t                          mask_;
+    std::vector<std::string> buffer_;
+    uint32_t mask_;
     alignas(64) std::atomic<uint32_t> head_{0};
     alignas(64) std::atomic<uint32_t> tail_{0};
-    std::atomic<uint64_t>             drops_{0};
+    std::atomic<uint64_t> drops_{0};
 
     std::atomic<bool> running_{false};
-    std::thread       writer_thread_;
-    std::string       path_;
+    std::thread writer_thread_;
+    std::string path_;
 
     void writer_loop();
 };

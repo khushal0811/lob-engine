@@ -12,8 +12,7 @@ namespace lob::gateway {
 // ---------------------------------------------------------------------------
 
 Gateway::Gateway(GatewayConfig config)
-    : config_(std::move(config)),
-      exchange_(config_.engine_config),
+    : config_(std::move(config)), exchange_(config_.engine_config),
       dispatcher_(config_.outbound_queue_capacity),
       replay_(config_.replay_log_path, config_.replay_queue_capacity) {
     assert((config_.inbound_queue_capacity & (config_.inbound_queue_capacity - 1)) == 0);
@@ -21,9 +20,7 @@ Gateway::Gateway(GatewayConfig config)
     inbound_mask_ = config_.inbound_queue_capacity - 1;
 }
 
-Gateway::~Gateway() {
-    stop();
-}
+Gateway::~Gateway() { stop(); }
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -31,15 +28,14 @@ Gateway::~Gateway() {
 
 void Gateway::start() {
     // ZMQ context and PULL socket (owned by receiver thread T1)
-    zmq_ctx_  = zmq_ctx_new();
+    zmq_ctx_ = zmq_ctx_new();
     zmq_pull_ = zmq_socket(zmq_ctx_, ZMQ_PULL);
 
     int rcvhwm = 0;
     zmq_setsockopt(zmq_pull_, ZMQ_RCVHWM, &rcvhwm, sizeof(rcvhwm));
 
     if (zmq_bind(zmq_pull_, config_.pull_endpoint.c_str()) != 0)
-        throw std::runtime_error("Gateway: zmq_bind (PULL) failed on " +
-                                 config_.pull_endpoint);
+        throw std::runtime_error("Gateway: zmq_bind (PULL) failed on " + config_.pull_endpoint);
 
     replay_.start();
     dispatcher_.start(config_.pub_endpoint);
@@ -89,7 +85,7 @@ void Gateway::stop() {
 // ---------------------------------------------------------------------------
 
 bool Gateway::inbound_push(events::OrderMessage msg) noexcept {
-    const uint32_t tail      = inbound_tail_.load(std::memory_order_relaxed);
+    const uint32_t tail = inbound_tail_.load(std::memory_order_relaxed);
     const uint32_t next_tail = (tail + 1) & inbound_mask_;
     if (next_tail == inbound_head_.load(std::memory_order_acquire)) {
         inbound_drops_.fetch_add(1, std::memory_order_relaxed);
@@ -158,11 +154,11 @@ void Gateway::receiver_loop() {
 // ---------------------------------------------------------------------------
 
 void Gateway::exchange_loop() {
-    using clock      = std::chrono::steady_clock;
-    using duration   = std::chrono::milliseconds;
+    using clock = std::chrono::steady_clock;
+    using duration = std::chrono::milliseconds;
 
     const duration snap_interval{config_.snapshot_interval_ms};
-    auto           next_snapshot = clock::now() + snap_interval;
+    auto next_snapshot = clock::now() + snap_interval;
 
     events::OrderMessage msg;
 

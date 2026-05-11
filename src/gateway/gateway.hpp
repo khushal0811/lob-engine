@@ -16,14 +16,14 @@ namespace lob::gateway {
 // GatewayConfig — runtime configuration for the exchange service.
 // ---------------------------------------------------------------------------
 struct GatewayConfig {
-    std::string pull_endpoint{"tcp://*:5555"};   // ZMQ PULL — inbound orders
-    std::string pub_endpoint{"tcp://*:5556"};    // ZMQ PUB  — outbound events
-    uint64_t    snapshot_interval_ms{100};        // periodic full-depth snapshot
+    std::string pull_endpoint{"tcp://*:5555"}; // ZMQ PULL — inbound orders
+    std::string pub_endpoint{"tcp://*:5556"};  // ZMQ PUB  — outbound events
+    uint64_t snapshot_interval_ms{100};        // periodic full-depth snapshot
     std::string replay_log_path{"logs/replay.ndjson"};
     EngineConfig engine_config{};
-    uint32_t    inbound_queue_capacity{65536};
-    uint32_t    outbound_queue_capacity{65536};
-    uint32_t    replay_queue_capacity{65536};
+    uint32_t inbound_queue_capacity{65536};
+    uint32_t outbound_queue_capacity{65536};
+    uint32_t replay_queue_capacity{65536};
 };
 
 // ---------------------------------------------------------------------------
@@ -53,31 +53,31 @@ public:
     ~Gateway();
 
     // Non-copyable, non-movable.
-    Gateway(const Gateway&)            = delete;
+    Gateway(const Gateway&) = delete;
     Gateway& operator=(const Gateway&) = delete;
 
     void start();
     void stop();
 
 private:
-    GatewayConfig    config_;
-    ExchangeManager  exchange_;
-    EventDispatcher  dispatcher_;
-    ReplayLogger     replay_;
+    GatewayConfig config_;
+    ExchangeManager exchange_;
+    EventDispatcher dispatcher_;
+    ReplayLogger replay_;
 
     std::atomic<bool> running_{false};
-    std::thread       receiver_thread_;
-    std::thread       exchange_thread_;
+    std::thread receiver_thread_;
+    std::thread exchange_thread_;
 
     void* zmq_ctx_{nullptr};
     void* zmq_pull_{nullptr};
 
     // Inbound SPSC ring buffer: T1 (receiver) → T2 (exchange)
     std::vector<events::OrderMessage> inbound_buffer_;
-    uint32_t                          inbound_mask_;
+    uint32_t inbound_mask_;
     alignas(64) std::atomic<uint32_t> inbound_head_{0};
     alignas(64) std::atomic<uint32_t> inbound_tail_{0};
-    std::atomic<uint64_t>             inbound_drops_{0};
+    std::atomic<uint64_t> inbound_drops_{0};
 
     void receiver_loop();
     void exchange_loop();

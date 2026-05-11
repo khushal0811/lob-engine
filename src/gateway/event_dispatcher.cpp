@@ -15,9 +15,7 @@ EventDispatcher::EventDispatcher(uint32_t queue_capacity) {
     mask_ = queue_capacity - 1;
 }
 
-EventDispatcher::~EventDispatcher() {
-    stop();
-}
+EventDispatcher::~EventDispatcher() { stop(); }
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -59,7 +57,7 @@ void EventDispatcher::stop() {
 // ---------------------------------------------------------------------------
 
 void EventDispatcher::enqueue(events::ExchangeEvent ev) noexcept {
-    const uint32_t tail     = tail_.load(std::memory_order_relaxed);
+    const uint32_t tail = tail_.load(std::memory_order_relaxed);
     const uint32_t next_tail = (tail + 1) & mask_;
     if (next_tail == head_.load(std::memory_order_acquire)) {
         drops_.fetch_add(1, std::memory_order_relaxed);
